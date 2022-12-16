@@ -84,7 +84,7 @@ def import_features(feature_matrix=None,
 
     # Normalize unicode [partial]
     # no script g, no tiebars, ...
-    ipa_substitutions = {'\u0261': 'g', 'ɡ': 'g', '͡': ''}
+    ipa_substitutions = {'\u0261': 'g', 'ɡ': 'g', 'ɡ': 'g', '͡': ''}
     for (s, r) in ipa_substitutions.items():
         segments_all = [re.sub(s, r, x) for x in segments_all]
     #print('segments_all:', segments_all)
@@ -96,6 +96,7 @@ def import_features(feature_matrix=None,
         ("[ʲ]", ('high', '+')),  # fixme: palatalization
         ("[ʼ]", ('constr.gl', '+')),
         ("[ʰ]", ('spread.gl', '+')),
+        ("[ʱ]", ('spread.gl', '+')),  # Bengali
         ("[*]", ('constr.gl', '+')),  # Korean
         ("[ʷ]", ('round', '+')),
         ("[˞]", ('rhotic', '+')),
