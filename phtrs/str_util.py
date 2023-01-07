@@ -5,63 +5,67 @@ import re
 from . import config as phon_config
 
 
-def clean(x):
-    """ Collapse consecutive spaces, remove leading/trailing spaces """
+def squish(x):
+    """ Collapse consecutive spaces, remove leading/trailing spaces. """
+    # see: https://stringr.tidyverse.org/reference/str_trim.html
     if isinstance(x, list):
-        return [clean(xi) for xi in x]
+        return [squish(xi) for xi in x]
     y = re.sub('[ ]+', ' ', x)
     return y.strip()
 
 
 def sep_chars(x):
-    """ Separate characters with space """
+    """ Separate characters with space. """
+    # see: torchtext.data.functional.simple_space_split
     if isinstance(x, list):
         return [sep_chars(xi) for xi in x]
     return ' '.join(x)
 
 
 def add_delim(x, sep=False):
-    """ Add begin/end delimiters to space-separated string """
+    """ Add begin/end delimiters to space-separated string. """
     if isinstance(x, list):
         return [add_delim(xi, sep) for xi in x]
     if sep:
         x = ' '.join(x)
-    y = [phon_config.bos] + [xi for xi in x.split(' ')] + [phon_config.eos]
-    return ' '.join(y)
+    #y = [phon_config.bos] + [xi for xi in x.split(' ')] + [phon_config.eos]
+    #return ' '.join(y)
+    y = f'{phon_config.bos} {x} {phon_config.eos}'
+    return y
 
 
 def remove_delim(x):
-    """ Remove begin/end delimiters """
+    """ Remove begin/end delimiters. """
     if isinstance(x, list):
         return [remove_delim(xi) for xi in x]
     y = re.sub(f'{phon_config.bos}', '', x)
     y = re.sub(f'{phon_config.eos}', '', y)
-    return clean(y)
+    return squish(y)
 
 
 def remove(x, syms):
-    """ Remove designated symbols """
+    """ Remove designated symbols. """
     if isinstance(x, list):
         return [remove(xi, syms) for xi in x]
     y = x
     for sym in syms:
         y = re.sub(sym, '', y)
-    return clean(y)
+    return squish(y)
 
 
 def retranscribe(x, subs):
-    """ Change segment transcription by applying substitutions """
+    """ Change segment transcription by applying substitutions. """
     if isinstance(x, list):
         return [retranscribe(xi, subs) for xi in x]
     y = x
     for s, r in subs.items():
         y = re.sub(s, r, y)
-    return clean(y)
+    return squish(y)
 
 
 def lcp(x, y, prefix=True):
     """
-    Longest common prefix (or suffix) of two segment sequences
+    Longest common prefix (or suffix) of two segment sequences.
     """
     if x == y:
         return x
