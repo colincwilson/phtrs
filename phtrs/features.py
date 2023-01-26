@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from collections import namedtuple
 #from unicodedata import normalize
-from . import config as phon_config
+from phtrs import config as phon_config
 # todo: delegate to panphon or phoible if possible
 # todo: warn about missing/nan feature values in matrix
 
@@ -284,7 +284,7 @@ def vectorize_matrix(fm):
     return fm
 
 
-# [deprecated]
+# deprecated
 def ftrspec2vec(ftrspecs, feature_matrix=None):
     """
     Convert dictionary of feature specifications (ftr -> +/-/0) 

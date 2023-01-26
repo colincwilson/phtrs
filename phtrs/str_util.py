@@ -22,7 +22,7 @@ def sep_chars(x):
     return ' '.join(x)
 
 
-def add_delim(x, sep=False):
+def add_delim(x, sep=False, edge='both'):
     """ Add begin/end delimiters to space-separated string. """
     if isinstance(x, list):
         return [add_delim(xi, sep) for xi in x]
@@ -30,7 +30,12 @@ def add_delim(x, sep=False):
         x = ' '.join(x)
     #y = [phon_config.bos] + [xi for xi in x.split(' ')] + [phon_config.eos]
     #return ' '.join(y)
-    y = f'{phon_config.bos} {x} {phon_config.eos}'
+    if edge == 'begin':
+        y = f'{phon_config.bos} {x}'
+    elif edge == 'end':
+        y = f'{x} {phon_config.eos}'
+    else:  # edge == 'both'
+        y = f'{phon_config.bos} {x} {phon_config.eos}'
     return y
 
 
