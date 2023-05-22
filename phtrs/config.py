@@ -2,8 +2,8 @@
 # Container for global variables in string environment
 
 epsilon = 'ϵ'  # avoid 'ε' (confusable with IPA), alternative '𝜀'
-bos = '⋊'  # begin delimiter
-eos = '⋉'  # end delimiter
+bos = '⋊'  # beginning-of-string marker, alternative '⊢'
+eos = '⋉'  # end-of-string marker, alternative '⊣'
 
 
 def init(config):
