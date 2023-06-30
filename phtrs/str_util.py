@@ -31,11 +31,11 @@ def add_delim(x, sep=False, edge='both'):
     #y = [phon_config.bos] + [xi for xi in x.split(' ')] + [phon_config.eos]
     #return ' '.join(y)
     if edge == 'begin':
-        y = f'{phon_config.bos} {x}'
+        y = phon_config.bos + ' ' + x
     elif edge == 'end':
-        y = f'{x} {phon_config.eos}'
+        y = x + ' ' + phon_config.eos
     else:  # edge == 'both'
-        y = f'{phon_config.bos} {x} {phon_config.eos}'
+        y = phon_config.bos + ' ' + x + ' ' + phon_config.eos
     return y
 
 
