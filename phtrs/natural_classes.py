@@ -20,18 +20,19 @@ def subsumes(ftrs1, ftrs2):
     return True
 
 
-def matches(form, pattern, focus_idx=0):
+def match(form, pattern, focus_idx=0):
     """
     Mark every symbol in space-separated form as 
     matching (1) or not matching (0) feature pattern 
     (sequence of feature-value dicts) with specified 
-    focus index. Slow (quadratic)!
+    focus index. Slow! (quadratic)
     """
+    fm = phon_config.feature_matrix
     form = form.split(' ')
     m = len(pattern)
     n = len(form)
-    matches = np.array([0.0] * n)
-    fm = phon_config.feature_matrix
+    ret = np.array([0.0] * n)
+
     for i in range(n - m + 1):
         flag = True
         for j in range(m):
@@ -40,5 +41,6 @@ def matches(form, pattern, focus_idx=0):
                 flag = False
                 break
         if flag:
-            matches[i + focus_idx] = 1.0
-    return matches
+            ret[i + focus_idx] = 1.0
+
+    return ret
