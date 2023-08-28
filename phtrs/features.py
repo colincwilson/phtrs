@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from collections import namedtuple
 #from unicodedata import normalize
-from phtrs import config as phon_config
+from . import config as phon_config
 # todo: delegate to panphon or phoible if possible
 # todo: warn about missing/nan feature values in matrix
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from phtrs import config as phon_config
+from . import config as phon_config
 
 
 def subsumes(ftrs1, ftrs2):
