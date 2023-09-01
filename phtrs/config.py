@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Container for global variables in string environment
 
 epsilon = 'ϵ'  # avoid 'ε' (confusable with IPA), alternative '𝜀'

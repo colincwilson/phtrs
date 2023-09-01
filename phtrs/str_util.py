@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Convenience functions operating on string on list of strings
 
 import re

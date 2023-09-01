@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import re, string, sys
 from pathlib import Path
 import pandas as pd
