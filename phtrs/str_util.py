@@ -1,4 +1,4 @@
-# Convenience functions operating on string on list of strings
+# Convenience functions operating on string or list of strings.
 
 import re
 from . import config as phon_config
