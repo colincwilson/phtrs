@@ -1,18 +1,18 @@
 # Container for global variables in string environment
 
 epsilon = 'ϵ'  # avoid 'ε' (confusable with IPA), alternative '𝜀'
-bos = '⋊'  # beginning-of-string marker, alternative '⊢'
-eos = '⋉'  # end-of-string marker, alternative '⊣'
+bos = '⋊'  # beginning-of-string, alternatives '⊢', '>', <s>
+eos = '⋉'  # end-of-string, alternatives '⊣', '<' or </s>
 
 
-def init(config):
+def init(param):
     """ Set globals with dictionary or module """
     global epsilon, bos, eos
-    if not isinstance(config, dict):
-        config = vars(config)
-    if 'epsilon' in config:
-        epsilon = config['epsilon']
-    if 'bos' in config:
-        bos = config['bos']
-    if 'eos' in config:
-        eos = config['eos']
+    if not isinstance(param, dict):
+        param = vars(param)
+    if 'epsilon' in param:
+        epsilon = param['epsilon']
+    if 'bos' in param:
+        bos = param['bos']
+    if 'eos' in param:
+        eos = param['eos']

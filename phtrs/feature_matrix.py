@@ -1,3 +1,4 @@
+# Prepare feature matrix for pytorch module.
 import re, string, sys
 from pathlib import Path
 import pandas as pd
@@ -58,8 +59,10 @@ def import_features(feature_matrix=None,
     """
 
     # Read matrix from file or use arg matrix.
-    ftr_matrix = pd.read_csv(
-        feature_matrix, sep=',', encoding='utf-8', comment='#')
+    ftr_matrix = pd.read_csv(feature_matrix,
+                             sep=',',
+                             encoding='utf-8',
+                             comment='#')
     print(ftr_matrix)
 
     # Add long segments and length feature ("let there be colons").
@@ -228,7 +231,8 @@ def standardize_matrix(fm):
     syms = [epsilon, bos, eos, *fm.symbols]
 
     # Special symbols are unspecified for all ordinary features.
-    special_sym_vals = pd.DataFrame({ftr: '0' for ftr in fm.features},
+    special_sym_vals = pd.DataFrame({ftr: '0'
+                                     for ftr in fm.features},
                                     index=[0])
 
     # Special symbols occupy first three rows of revised feature matrix.
@@ -264,7 +268,8 @@ def standardize_matrix(fm):
     phon_config.delim_ftr = delim_ftr = 1
     phon_config.cv_ftr = cv_ftr = 2
 
-    fm = FeatureMatrix(syms, fm.vowels, features, ftr_matrix, fm.ftr_matrix_vec)
+    fm = FeatureMatrix(syms, fm.vowels, features, ftr_matrix,
+                       fm.ftr_matrix_vec)
     return fm
 
 
@@ -312,8 +317,9 @@ def ftrspec2vec(ftrspecs, feature_matrix=None):
 def test():
     feature_matrix = Path.home() \
         / 'Code/Python/tensormorph_redup/ftrs/hayes_features.csv'
-    import_features(
-        feature_matrix, segments=['b', 'a'], save_file=Path('./tmp'))
+    import_features(feature_matrix,
+                    segments=['b', 'a'],
+                    save_file=Path('./tmp'))
 
 
 if __name__ == "__main__":

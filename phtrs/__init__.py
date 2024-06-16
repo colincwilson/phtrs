@@ -1,6 +1,6 @@
 __all__ = [
     "config",
-    "features",
+    "feature_matrix",
     "natural_classes",
     "str_util",
 ]
