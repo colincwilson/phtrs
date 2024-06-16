@@ -1,7 +1,7 @@
 # Prepare feature matrix for pytorch module.
 import re, string, sys
 from pathlib import Path
-import pandas as pd
+import pandas as pd  # todo: replace with polars
 import numpy as np
 from collections import namedtuple
 #from unicodedata import normalize
@@ -41,10 +41,11 @@ class FeatureMatrix():
             self.sym2ftr_vec[sym] = tuple(ftrs.values())
 
 
-def import_features(feature_matrix=None,
+def import_features(feature_file=None,
                     segments=None,
                     standardize=True,
-                    save_file=None):
+                    save_file=None,
+                    verbose=True):
     """
     Import feature matrix from file with segments in initial column. 
     If segments is specified, eliminates constant and redundant features. 
@@ -53,17 +54,18 @@ def import_features(feature_matrix=None,
     - Add symbol-presence feature (sym),
     - Add begin/end delimiters and feature to identify them (begin:+1, end:-1),
     - Add feature to identify consonants (C) and vowels (V) (C:+1, V:-1)
-    Otherwise these symbols and features are assumed to be already present 
-    in the feature matrix or file.
+    Otherwise these symbols and features are assumed to be already 
+    present in the feature matrix or file.
     todo: arrange segments in IPA order
     """
 
-    # Read matrix from file or use arg matrix.
-    ftr_matrix = pd.read_csv(feature_matrix,
+    # Read matrix from file.
+    ftr_matrix = pd.read_csv(feature_file,
                              sep=',',
                              encoding='utf-8',
                              comment='#')
-    print(ftr_matrix)
+    if verbose:
+        print(ftr_matrix)
 
     # Add long segments and length feature ("let there be colons").
     ftr_matrix_short = ftr_matrix.copy()
@@ -121,7 +123,7 @@ def import_features(feature_matrix=None,
                 idx = segments_all.index(base_seg)
             except:
                 print(
-                    f'error: could not find index of base segment |{base_seg}| from {seg}'
+                    f'Error: could not find index of base segment |{base_seg}| from {seg}'
                 )
                 raise
             base_ftr = [x for x in ftr_matrix.iloc[idx, :]]
@@ -315,11 +317,12 @@ def ftrspec2vec(ftrspecs, feature_matrix=None):
 
 
 def test():
-    feature_matrix = Path.home() \
-        / 'Code/Python/tensormorph_redup/ftrs/hayes_features.csv'
-    import_features(feature_matrix,
-                    segments=['b', 'a'],
-                    save_file=Path('./tmp'))
+    feature_file = Path.home() \
+        / 'Code/Python/transmorph/features/hayes_features.csv'
+    import_features( \
+        feature_file,
+        segments=['b', 'a'],
+        save_file=Path('./tmp'))
 
 
 if __name__ == "__main__":
