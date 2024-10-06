@@ -1,7 +1,7 @@
 # Convenience functions operating on string or list of strings.
 
 import re
-from . import config as phon_config
+from phtrs import config as phon_config
 
 
 def squish(x):
@@ -27,14 +27,12 @@ def add_delim(x, sep=False, edge='both'):
         return [add_delim(xi, sep) for xi in x]
     if sep:
         x = ' '.join(x)
-    #y = [phon_config.bos] + [xi for xi in x.split(' ')] + [phon_config.eos]
-    #return ' '.join(y)
     if edge == 'begin':
-        y = phon_config.bos + ' ' + x
+        y = f'{phon_config.bos} {x}'
     elif edge == 'end':
-        y = x + ' ' + phon_config.eos
-    else:  # edge == 'both'
-        y = phon_config.bos + ' ' + x + ' ' + phon_config.eos
+        y = f'{x} {phon_config.eos}'
+    else:  # default edge == 'both'
+        y = f'{phon_config.bos} {x} {phon_config.eos}'
     return y
 
 
