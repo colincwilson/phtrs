@@ -2,6 +2,7 @@
 import re, string, sys
 from pathlib import Path
 import pandas as pd  # todo: replace with polars
+import polars as pl
 import numpy as np
 from collections import namedtuple
 #from unicodedata import normalize
@@ -19,11 +20,11 @@ class FeatureMatrix():
                  features,
                  ftr_matrix,
                  ftr_matrix_vec=None):
-        self.symbols = symbols  # Special symbols and segments
-        self.vowels = vowels  # Symbols that are vowels
-        self.features = features  # Feature names
-        self.ftr_matrix = ftr_matrix  # Feature matrix {'+', '-', '0'}
-        self.ftr_matrix_vec = ftr_matrix_vec  # Feature matrix {+1.0, -1.0, 0.0}
+        self.symbols = symbols  # Special symbols and segments.
+        self.vowels = vowels  # Symbols that are vowels.
+        self.features = features  # Feature names.
+        self.ftr_matrix = ftr_matrix  # Feature matrix {'+', '-', '0'}.
+        self.ftr_matrix_vec = ftr_matrix_vec  # Feature matrix {+1.0, -1.0, 0.0}.
 
         # Symbol <-> idx.
         self.sym2idx = {}
@@ -50,10 +51,10 @@ def import_features(feature_file=None,
     Import feature matrix from file with segments in initial column. 
     If segments is specified, eliminates constant and redundant features. 
     If standardize flag is set:
-    - Add epsilon symbol with all-zero feature vector,
-    - Add symbol-presence feature (sym),
-    - Add begin/end delimiters and feature to identify them (begin:+1, end:-1),
-    - Add feature to identify consonants (C) and vowels (V) (C:+1, V:-1)
+    - Add epsilon symbol with all-zero feature vector.
+    - Add symbol-presence feature (sym).
+    - Add begin/end delimiters and feature to identify them (begin:+1, end:-1).
+    - Add feature to identify consonants (C) and vowels (V) (C:+1, V:-1).
     Otherwise these symbols and features are assumed to be already 
     present in the feature matrix or file.
     todo: arrange segments in IPA order
@@ -68,14 +69,17 @@ def import_features(feature_file=None,
         print(ftr_matrix)
 
     # Add long segments and length feature ("let there be colons").
-    ftr_matrix_short = ftr_matrix.copy()
-    ftr_matrix_long = ftr_matrix.copy()
-    ftr_matrix_short['long'] = '-'
-    ftr_matrix_long['long'] = '+'
-    ftr_matrix_long.iloc[:, 0] = [x + 'ː' for x in ftr_matrix_long.iloc[:, 0]]
-    ftr_matrix = pd.concat([ftr_matrix_short, ftr_matrix_long],
-                           axis=0,
-                           sort=False)
+    if 0:  # todo: make config option
+        ftr_matrix_short = ftr_matrix.copy()
+        ftr_matrix_long = ftr_matrix.copy()
+        ftr_matrix_short['long'] = '-'
+        ftr_matrix_long['long'] = '+'
+        ftr_matrix_long.iloc[:, 0] = \
+            [x + 'ː' for x in ftr_matrix_long.iloc[:, 0]]
+        ftr_matrix = pd.concat( \
+            [ftr_matrix_short, ftr_matrix_long],
+            axis=0,
+            sort=False)
 
     # List all segments and features in the matrix, locate
     # syllabic feature, and remove first column (containing segments).
@@ -95,7 +99,7 @@ def import_features(feature_file=None,
 
     # Handle segments with diacritics. [partial]
     # (feature names from Hayes matrix)
-    diacritics = [
+    diacritics = [ \
         ("[ˈ]", ('stress', '+')),
         ("[ʲ]", ('high', '+')),  # fixme: palatalization
         ("[ʼ]", ('constr.gl', '+')),
@@ -111,7 +115,7 @@ def import_features(feature_file=None,
         for seg in segments:
             # Detect and strip diacritics.
             base_seg = seg
-            diacritic_ftrs = []  # Features marked by diacritics
+            diacritic_ftrs = []  # Features marked by diacritics.
             for (diacritic, ftrval) in diacritics:
                 if re.search(diacritic, base_seg):
                     diacritic_ftrs.append(ftrval)
@@ -146,7 +150,8 @@ def import_features(feature_file=None,
     # features other than syll_ftr that have constant values.
     if segments is not None:
         # Check that all segments appear in the feature matrix.
-        missing_segments = [x for x in segments if x not in segments_all]
+        missing_segments = \
+            [x for x in segments if x not in segments_all]
         if len(missing_segments) > 0:
             raise Exception(f'Segments missing from feature matrix: '
                             f'{missing_segments}')
@@ -189,9 +194,9 @@ def one_hot_features(segments=None,
                      standardize=True,
                      save_file=None):
     """
-    Create one-hot feature matrix from list of segments (or number 
-    of ascii segments), optionally standardizing with special symbols 
-    and features.
+    Create one-hot feature matrix from list of segments
+    (or number of ascii segments), optionally standardizing
+    with special symbols and features.
     """
     if isinstance(segments, int):
         segments = string.ascii_lowercase[:segments]
@@ -233,13 +238,14 @@ def standardize_matrix(fm):
     syms = [epsilon, bos, eos, *fm.symbols]
 
     # Special symbols are unspecified for all ordinary features.
-    special_sym_vals = pd.DataFrame({ftr: '0'
-                                     for ftr in fm.features},
-                                    index=[0])
+    special_sym_vals = pd.DataFrame( \
+        {ftr: '0' for ftr in fm.features},
+        index=[0])
 
     # Special symbols occupy first three rows of revised feature matrix.
-    ftr_matrix = pd.concat([special_sym_vals] * 3 +
-                           [fm.ftr_matrix]).reset_index(drop=True)
+    ftr_matrix = pd.concat( \
+        [special_sym_vals] * 3 +
+        [fm.ftr_matrix]).reset_index(drop=True)
 
     # # # # # # # # # #
     # Special features.
