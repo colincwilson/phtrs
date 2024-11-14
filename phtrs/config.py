@@ -1,8 +1,8 @@
 # Container for global variables in string environment
 
 epsilon = 'ϵ'  # avoid 'ε' (confusable with IPA), alternative '𝜀'
-bos = '⋊'  # beginning-of-string, alternatives '⊢', '>', <s>
-eos = '⋉'  # end-of-string, alternatives '⊣', '<' or </s>
+bos = '⋊'  # beginning of string / start token; alternatives '⊢', '>', <s>
+eos = '⋉'  # end of string / end token; alternatives '⊣', '<' or </s>
 
 
 def init(param):
