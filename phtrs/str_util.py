@@ -5,7 +5,9 @@ from phtrs import config as phon_config
 
 
 def squish(x):
-    """ Collapse consecutive spaces, remove leading/trailing spaces. """
+    """
+    Collapse consecutive spaces, remove leading/trailing spaces.
+    """
     # see: https://stringr.tidyverse.org/reference/str_trim.html
     if isinstance(x, list):
         return [squish(xi) for xi in x]
@@ -14,7 +16,9 @@ def squish(x):
 
 
 def sep_chars(x):
-    """ Separate characters with space. """
+    """
+    Separate characters with space.
+    """
     # see: torchtext.data.functional.simple_space_split
     if isinstance(x, list):
         return [sep_chars(xi) for xi in x]
@@ -22,7 +26,9 @@ def sep_chars(x):
 
 
 def add_delim(x, sep=False, edge='both'):
-    """ Add begin/end delimiters to space-separated string. """
+    """
+    Add begin/end delimiters to space-separated string.
+    """
     if isinstance(x, list):
         return [add_delim(xi, sep) for xi in x]
     if sep:
@@ -37,7 +43,9 @@ def add_delim(x, sep=False, edge='both'):
 
 
 def remove_delim(x):
-    """ Remove begin/end delimiters. """
+    """
+    Remove begin/end delimiters.
+    """
     if isinstance(x, list):
         return [remove_delim(xi) for xi in x]
     y = re.sub(f'{phon_config.bos}', '', x)
@@ -46,7 +54,9 @@ def remove_delim(x):
 
 
 def remove(x, syms):
-    """ Remove designated symbols. """
+    """
+    Remove designated symbols.
+    """
     if isinstance(x, list):
         return [remove(xi, syms) for xi in x]
     y = x
@@ -56,13 +66,29 @@ def remove(x, syms):
 
 
 def retranscribe(x, subs):
-    """ Change segment transcription by applying substitutions. """
+    """
+    Change transcription by applying dictionary of
+    substitutions to string(s).
+    """
     if isinstance(x, list):
         return [retranscribe(xi, subs) for xi in x]
     y = x
     for s, r in subs.items():
         y = re.sub(s, r, y)
     return squish(y)
+
+
+def retranscribe_sep(x, subs, sep=' '):
+    """
+    Change transcription by applying dictionary of
+    substitutions to string(s) of separated segments.
+    """
+    if isinstance(x, list):
+        return [retranscribe_sep(xi, subs, sep) for xi in x]
+    y = x.split(sep)
+    y = [subs[yi] if yi in subs else yi for yi in y]
+    y = sep.join(y)
+    return y
 
 
 def lcp(x, y, prefix=True):
