@@ -1,14 +1,16 @@
 # Convenience functions operating on string or list of strings.
 
 import re
+import polars as pl
 from phtrs import config as phon_config
+from collections import Counter
 
 
 def squish(x):
     """
     Collapse consecutive spaces, remove leading/trailing spaces.
+    see: https://stringr.tidyverse.org/reference/str_trim.html
     """
-    # see: https://stringr.tidyverse.org/reference/str_trim.html
     if isinstance(x, list):
         return [squish(xi) for xi in x]
     y = re.sub('[ ]+', ' ', x)
@@ -89,6 +91,44 @@ def retranscribe_sep(x, subs, sep=' '):
     y = [subs[yi] if yi in subs else yi for yi in y]
     y = sep.join(y)
     return y
+
+
+def get_words(text, sep=' '):
+    """
+    Get words with frequencies from text(s).
+    """
+    words = Counter()
+    if isinstance(text, pl.Series):
+        text = text.to_list()
+    if isinstance(text, list):
+        for texti in text:
+            words.update(texti.split(sep))
+    else:
+        words.update(text.split(sep))
+    words = pl.DataFrame({ \
+        'word': words.keys(),
+        'freq': words.values() })
+    return words
+
+
+def get_symbols(word, sep=' '):
+    """
+    Get symbols with frequencies from word(s).
+    """
+    syms = Counter()
+    if isinstance(word, pl.Series):
+        word = word.to_list()
+    if isinstance(word, list):
+        for wordi in word:
+            if sep != '':
+                wordi = wordi.split(sep)
+            syms.update(wordi)
+    else:
+        syms.update(word.split(sep))
+    syms = pl.DataFrame({ \
+        'sym': syms.keys(),
+        'freq': syms.values() })
+    return syms
 
 
 def lcp(x, y, prefix=True):
