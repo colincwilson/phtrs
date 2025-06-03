@@ -1,4 +1,4 @@
-# Container for global variables in string environment
+# Container for global variables in string environment.
 
 epsilon = 'ϵ'  # avoid 'ε' (confusable with IPA), alternative '𝜀'
 bos = '⋊'  # beginning of string / start token; alternatives '⊢', '>', <s>
