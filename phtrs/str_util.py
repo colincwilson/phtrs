@@ -1,101 +1,141 @@
 # Convenience functions operating on string or list of strings.
+# todo: func to remove punctuation
+# todo: mirror str_util.R
 
 import re
+import string
 import polars as pl
 from phtrs import config as phon_config
 from collections import Counter
 
+punc = string.punctuation
+punc_regexp = r"[" + re.escape(punc) + r"]"
 
-def squish(x):
+
+def squish(word):
     """
     Collapse consecutive spaces, remove leading/trailing spaces.
     see: https://stringr.tidyverse.org/reference/str_trim.html
     """
-    if isinstance(x, list):
-        return [squish(xi) for xi in x]
-    y = re.sub('[ ]+', ' ', x)
-    return y.strip()
+    if isinstance(word, list):
+        return [squish(wordi) for wordi in word]
+    ret = re.sub('[ ]+', ' ', word)
+    ret = ret.strip()
+    return ret
 
 
-def sep_chars(x):
+def str_sep(word, syms=None, regexp=None):
     """
-    Separate characters with space.
-    """
+    Separate symbols in word with spaces.
     # see: torchtext.data.functional.simple_space_split
-    if isinstance(x, list):
-        return [sep_chars(xi) for xi in x]
-    return ' '.join(x)
+    """
+    if syms is None and regexp is None:
+        regexp = "(.)"
+    if regexp is None:
+        syms.sort(key=lambda x: len(x))
+        regexp = '(' + '|'.join(syms) + ')'
+
+    if isinstance(word, list):
+        return [str_sep(wordi, syms, regexp, sep) for wordi in word]
+
+    ret = re.sub(regexp, "\\1 ", word)
+    ret = squish(ret)
+    return ret
 
 
-def add_delim(x, sep=False, edge='both'):
+def add_delim(word, sep=False, edge='both'):
     """
     Add begin/end delimiters to space-separated string.
     """
-    if isinstance(x, list):
-        return [add_delim(xi, sep) for xi in x]
+    if isinstance(word, list):
+        return [add_delim(wordi, sep) for wordi in word]
+    ret = word
     if sep:
-        x = ' '.join(x)
+        ret = ' '.join(ret)
     if edge == 'begin':
-        y = f'{phon_config.bos} {x}'
+        ret = f'{phon_config.bos} {ret}'
     elif edge == 'end':
-        y = f'{x} {phon_config.eos}'
+        ret = f'{ret} {phon_config.eos}'
     else:  # default edge == 'both'
-        y = f'{phon_config.bos} {x} {phon_config.eos}'
-    return y
+        ret = f'{phon_config.bos} {ret} {phon_config.eos}'
+    return ret
 
 
-def remove_delim(x):
+def remove_delim(word):
     """
     Remove begin/end delimiters.
     """
-    if isinstance(x, list):
-        return [remove_delim(xi) for xi in x]
-    y = re.sub(f'{phon_config.bos}', '', x)
-    y = re.sub(f'{phon_config.eos}', '', y)
-    return squish(y)
+    if isinstance(word, list):
+        return [remove_delim(wordi) for wordi in word]
+    ret = word
+    ret = re.sub(f'{phon_config.bos}', '', ret)
+    ret = re.sub(f'{phon_config.eos}', '', ret)
+    ret = squish(ret)
+    return ret
 
 
-def remove(x, syms):
+def remove_syms(word, syms=None, regexp=None, sep=' '):
     """
     Remove designated symbols.
     """
-    if isinstance(x, list):
-        return [remove(xi, syms) for xi in x]
-    y = x
-    for sym in syms:
-        y = re.sub(sym, '', y)
-    return squish(y)
+    if syms is None and regexp is None:
+        return word
+    if regexp is None:
+        regexp = '(' + '|'.join(syms) + ')'
+
+    if isinstance(word, list):
+        return [remove(wordi, syms, regexp) for wordi in word]
+
+    ret = re.sub(regexp, '', word)
+    ret = squish(ret)
+    return ret
 
 
-def retranscribe(x, subs):
+def remove_punc(word):
+    """
+    Remove punctuation from word.
+    """
+    if isinstance(word, list):
+        return [remove_punct(wordi) for wordi in word]
+    ret = re.sub(punc_regexp, '', word)
+    ret = squish(ret)
+    return ret
+
+
+def str_subs(word, subs={}, sep=' '):
     """
     Change transcription by applying dictionary of
     substitutions to string(s).
     """
-    if isinstance(x, list):
-        return [retranscribe(xi, subs) for xi in x]
-    y = x
+    if isinstance(word, list):
+        return [str_subs(wordi, subs, sep) for wordi in word]
+    sep_flag = (sep is not None and sep != '')
+    ret = word.split(sep) if sep_flag else word
     for s, r in subs.items():
-        y = re.sub(s, r, y)
-    return squish(y)
+        ret = [subs[x] if x in subs else x for x in ret]
+    ret = sep.join(ret) if sep_flag else ''.join(ret)
+    ret = squish(ret)
+    return ret
 
 
-def retranscribe_sep(x, subs, sep=' '):
-    """
-    Change transcription by applying dictionary of
-    substitutions to string(s) of separated segments.
-    """
-    if isinstance(x, list):
-        return [retranscribe_sep(xi, subs, sep) for xi in x]
-    y = x.split(sep)
-    y = [subs[yi] if yi in subs else yi for yi in y]
-    y = sep.join(y)
-    return y
+retranscribe = str_subs  # Alias.
+
+# def retranscribe_sep(x, subs, sep=' '):
+#     """
+#     Change transcription by applying dictionary of
+#     substitutions to string(s) of separated segments.
+#     """
+#     if isinstance(x, list):
+#         return [retranscribe_sep(xi, subs, sep) for xi in x]
+#     y = x.split(sep)
+#     y = [subs[yi] if yi in subs else yi for yi in y]
+#     y = sep.join(y)
+#     return y
 
 
 def get_words(text, sep=' '):
     """
-    Get words with frequencies from text(s).
+    Get words types and type frequencies from text(s).
     """
     words = Counter()
     if isinstance(text, pl.Series):
@@ -111,24 +151,66 @@ def get_words(text, sep=' '):
     return words
 
 
-def get_symbols(word, sep=' '):
+def unigram_tokens(word, sep=' '):
     """
-    Get symbols with frequencies from word(s).
+    Get unigram tokens from one word.
     """
-    syms = Counter()
+    if sep is not None and sep != '':
+        ret = word.split(sep)
+    else:
+        ret = word
+    return ret
+
+
+def unigrams(word, sep=' '):
+    """
+    Get unigram types and type frequencies from word(s).
+    """
+    ret = Counter()
     if isinstance(word, pl.Series):
         word = word.to_list()
     if isinstance(word, list):
         for wordi in word:
-            if sep != '':
-                wordi = wordi.split(sep)
-            syms.update(wordi)
+            ret.update(unigram_tokens(wordi, sep))
     else:
-        syms.update(word.split(sep))
-    syms = pl.DataFrame({ \
-        'sym': syms.keys(),
-        'freq': syms.values() })
-    return syms
+        ret.update(unigram_tokens(word, sep))
+    ret = pl.DataFrame({ \
+        'sym': ret.keys(),
+        'freq': ret.values() })
+    return ret
+
+
+get_symbols = unigrams  # Alias.
+
+
+def bigram_tokens(word, sep=' '):
+    """
+    Get bigram tokens from one word.
+    """
+    if sep is not None and sep != '':
+        ret = word.split(sep)
+    else:
+        ret = word
+    ret = list(zip(ret[:-1], ret[1:]))
+    return ret
+
+
+def bigrams(word, sep=' '):
+    """
+    Get bigrams and their type frequencies from word(s).
+    """
+    ret = Counter()
+    if isinstance(word, pl.Series):
+        word = word.to_list()
+    if isinstance(word, list):
+        for wordi in word:
+            ret.update(bigram_tokens(wordi, sep))
+    else:
+        ret.update(bigram_tokens(word, sep))
+    ret = pl.DataFrame({ \
+        'bigram': ret.keys(),
+        'freq': ret.values() })
+    return ret
 
 
 def lcp(x, y, prefix=True):
@@ -158,9 +240,15 @@ def lcp(x, y, prefix=True):
 
 
 def test():
-    phono_config.init({'epsilon': '<eps>', 'bos': '>', 'eos': '<'})
+    #phon_config.init({'epsilon': '<eps>', 'bos': '>', 'eos': '<'})
     print(phon_config.bos)
     print(phon_config.eos)
+    print(squish(' t  e s  t   '))
+    print(str_sep('cheek', syms=['ch', 'ee', 'k']))
+    print(str_sep('cheek', regexp='(ch|ee|k)'))
+    print(add_delim('test'))
+    print(remove_syms('testing', syms='aeiou'))
+    print(remove_punc('[(testing).!]?'))
 
 
 if __name__ == "__main__":
