@@ -9,6 +9,8 @@ from phtrs import config as phon_config
 from collections import Counter
 
 punc = string.punctuation
+smart_punc = '“”‘’'
+punc = punc + smart_punc
 punc_regexp = r"[" + re.escape(punc) + r"]"
 
 
@@ -32,7 +34,7 @@ def str_sep(word, syms=None, regexp=None):
     if syms is None and regexp is None:
         regexp = "(.)"
     if regexp is None:
-        syms.sort(key=lambda x: len(x))
+        syms.sort(key=lambda x: len(x), reverse=True)
         regexp = '(' + '|'.join(syms) + ')'
 
     if isinstance(word, list):
@@ -48,7 +50,7 @@ def add_delim(word, sep=False, edge='both'):
     Add begin/end delimiters to space-separated string.
     """
     if isinstance(word, list):
-        return [add_delim(wordi, sep) for wordi in word]
+        return [add_delim(wordi, sep, edge) for wordi in word]
     ret = word
     if sep:
         ret = ' '.join(ret)
@@ -84,7 +86,7 @@ def remove_syms(word, syms=None, regexp=None, sep=' '):
         regexp = '(' + '|'.join(syms) + ')'
 
     if isinstance(word, list):
-        return [remove(wordi, syms, regexp) for wordi in word]
+        return [remove(wordi, syms, regexp, sep) for wordi in word]
 
     ret = re.sub(regexp, '', word)
     ret = squish(ret)
@@ -96,7 +98,7 @@ def remove_punc(word):
     Remove punctuation from word.
     """
     if isinstance(word, list):
-        return [remove_punct(wordi) for wordi in word]
+        return [remove_punc(wordi) for wordi in word]
     ret = re.sub(punc_regexp, '', word)
     ret = squish(ret)
     return ret
@@ -148,6 +150,7 @@ def get_words(text, sep=' '):
     words = pl.DataFrame({ \
         'word': words.keys(),
         'freq': words.values() })
+    words = words.sort(by='freq', descending=True)
     return words
 
 
