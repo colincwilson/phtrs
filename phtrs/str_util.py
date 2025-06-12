@@ -28,7 +28,8 @@ def squish(word):
 
 def str_sep(word, syms=None, regexp=None):
     """
-    Separate symbols in word with spaces.
+    Separate symbols in word with spaces using
+    symbol list or regexp.
     # see: torchtext.data.functional.simple_space_split
     """
     if syms is None and regexp is None:
@@ -47,7 +48,7 @@ def str_sep(word, syms=None, regexp=None):
 
 def add_delim(word, sep=False, edge='both'):
     """
-    Add begin/end delimiters to space-separated string.
+    Add begin/end symbols to space-separated string.
     """
     if isinstance(word, list):
         return [add_delim(wordi, sep, edge) for wordi in word]
@@ -66,6 +67,7 @@ def add_delim(word, sep=False, edge='both'):
 def remove_delim(word):
     """
     Remove begin/end delimiters.
+    todo: sep argument
     """
     if isinstance(word, list):
         return [remove_delim(wordi) for wordi in word]
@@ -96,11 +98,29 @@ def remove_syms(word, syms=None, regexp=None, sep=' '):
 def remove_punc(word):
     """
     Remove punctuation from word.
+    todo: sep argument
     """
     if isinstance(word, list):
         return [remove_punc(wordi) for wordi in word]
     ret = re.sub(punc_regexp, '', word)
     ret = squish(ret)
+    return ret
+
+
+def str_pad(word, n, sep=' ', pad=config.epsilon):
+    """
+    Pad end of string or list up to length n.
+    """
+    if word is None:
+        ret = [pad]
+    elif isinstance(word, str) and sep != '':
+        ret = word.split(' ')
+    else:
+        ret = word
+    if len(ret) < n:
+        ret += [pad] * (n - len(ret))
+    if isinstance(word, str):
+        sep.join(ret)
     return ret
 
 
