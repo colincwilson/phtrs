@@ -107,7 +107,7 @@ def remove_punc(word):
     return ret
 
 
-def str_pad(word, n, sep=' ', pad=config.epsilon):
+def str_pad(word, n, sep=' ', pad=phon_config.epsilon):
     """
     Pad end of string or list up to length n.
     """
