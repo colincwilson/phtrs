@@ -128,6 +128,7 @@ def str_subs(word, subs={}, sep=' '):
     """
     Change transcription by applying dictionary of
     substitutions to string(s).
+    note: handles deterministic substitutions only.
     """
     if isinstance(word, list):
         return [str_subs(wordi, subs, sep) for wordi in word]
