@@ -129,6 +129,8 @@ def str_subs(word, subs={}, sep=' '):
     Change transcription by applying dictionary of
     substitutions to string(s).
     note: handles deterministic substitutions only.
+    note: alternative to native str.maketrans / 
+    str.translate for space-separated symbol sequences.
     """
     if isinstance(word, list):
         return [str_subs(wordi, subs, sep) for wordi in word]
@@ -143,6 +145,47 @@ def str_subs(word, subs={}, sep=' '):
 
 retranscribe = str_subs  # Alias.
 
+# # # # # # # # # #
+# Correspondence indices.
+
+digits = '0123456789'
+subscript_digits = '₀₁₂₃₄₅₆₇₈₉'
+digit2subscript = str.maketrans( \
+    digits, subscript_digits)
+
+
+def add_indices(word, sep=" "):
+    """
+    Add integer indices (numbered left-to-right)
+    to symbols in separated word.
+    """
+    if isinstance(word, list):
+        return [add_indices(wordi, sep) for wordi in word]
+    syms = word.split(sep)
+    syms = [f'{sym}{as_index(i)}' for i, sym in enumerate(syms)]
+    ret = sep.join(syms)
+    return ret
+
+
+def remove_indices(word):
+    """
+    Remove integer indices from word.
+    """
+    if isinstance(word, list):
+        return [remove_indices(wordi) for wordi in word]
+    ret = re.sub(f'[{subscript_digits}]', '', word)
+    return ret
+
+
+def as_index(idx):
+    """ Convert integer to subscript index. """
+    idx = str(idx)
+    if not re.search(f'^[{digits}]+$', idx):
+        return None
+    ret = idx.translate(digit2subscript)
+    return ret
+
+
 # def retranscribe_sep(x, subs, sep=' '):
 #     """
 #     Change transcription by applying dictionary of
@@ -154,6 +197,9 @@ retranscribe = str_subs  # Alias.
 #     y = [subs[yi] if yi in subs else yi for yi in y]
 #     y = sep.join(y)
 #     return y
+
+# # # # # # # # # #
+# Word and substring frequencies.
 
 
 def get_words(text, sep=' '):
