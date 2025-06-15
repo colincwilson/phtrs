@@ -20,7 +20,7 @@ def squish(word):
     see: https://stringr.tidyverse.org/reference/str_trim.html
     """
     if isinstance(word, list):
-        return [squish(wordi) for wordi in word]
+        return [squish(word_) for word_ in word]
     ret = re.sub('[ ]+', ' ', word)
     ret = ret.strip()
     return ret
@@ -51,7 +51,7 @@ def add_delim(word, sep=False, edge='both'):
     Add begin/end symbols to space-separated string.
     """
     if isinstance(word, list):
-        return [add_delim(wordi, sep, edge) for wordi in word]
+        return [add_delim(word_, sep, edge) for word_ in word]
     ret = word
     if sep:
         ret = ' '.join(ret)
@@ -70,7 +70,7 @@ def remove_delim(word):
     todo: sep argument
     """
     if isinstance(word, list):
-        return [remove_delim(wordi) for wordi in word]
+        return [remove_delim(word_) for word_ in word]
     ret = word
     ret = re.sub(f'{phon_config.bos}', '', ret)
     ret = re.sub(f'{phon_config.eos}', '', ret)
@@ -88,7 +88,7 @@ def remove_syms(word, syms=None, regexp=None, sep=' '):
         regexp = '(' + '|'.join(syms) + ')'
 
     if isinstance(word, list):
-        return [remove(wordi, syms, regexp, sep) for wordi in word]
+        return [remove(word_, syms, regexp, sep) for word_ in word]
 
     ret = re.sub(regexp, '', word)
     ret = squish(ret)
@@ -101,7 +101,7 @@ def remove_punc(word):
     todo: sep argument
     """
     if isinstance(word, list):
-        return [remove_punc(wordi) for wordi in word]
+        return [remove_punc(word_) for word_ in word]
     ret = re.sub(punc_regexp, '', word)
     ret = squish(ret)
     return ret
@@ -133,7 +133,7 @@ def str_subs(word, subs={}, sep=' '):
     str.translate for space-separated symbol sequences.
     """
     if isinstance(word, list):
-        return [str_subs(wordi, subs, sep) for wordi in word]
+        return [str_subs(word_, subs, sep) for word_ in word]
     sep_flag = (sep is not None and sep != '')
     ret = word.split(sep) if sep_flag else word
     for s, r in subs.items():
@@ -154,16 +154,23 @@ digit2subscript = str.maketrans( \
     digits, subscript_digits)
 
 
-def add_indices(word, sep=" "):
+def add_indices(word, skip=[], sep=" "):
     """
     Add integer indices (numbered left-to-right)
     to symbols in separated word.
     """
     if isinstance(word, list):
-        return [add_indices(wordi, sep) for wordi in word]
+        return [add_indices(word_, sep) for word_ in word]
     syms = word.split(sep)
-    syms = [f'{sym}{as_index(i)}' for i, sym in enumerate(syms)]
-    ret = sep.join(syms)
+    use_skip = (skip is not None and len(skip) > 0)
+    syms_idx, idx = [], 0
+    for sym in syms:
+        if use_skip and sym in skip:
+            syms_idx.append(sym)
+        else:
+            syms_idx.append(f'{sym}{as_index(idx)}')
+            idx += 1
+    ret = sep.join(syms_idx)
     return ret
 
 
@@ -172,7 +179,7 @@ def remove_indices(word):
     Remove integer indices from word.
     """
     if isinstance(word, list):
-        return [remove_indices(wordi) for wordi in word]
+        return [remove_indices(word_) for word_ in word]
     ret = re.sub(f'[{subscript_digits}]', '', word)
     return ret
 
