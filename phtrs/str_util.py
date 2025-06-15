@@ -39,7 +39,7 @@ def str_sep(word, syms=None, regexp=None):
         regexp = '(' + '|'.join(syms) + ')'
 
     if isinstance(word, list):
-        return [str_sep(wordi, syms, regexp, sep) for wordi in word]
+        return [str_sep(word_, syms, regexp, sep) for word_ in word]
 
     ret = re.sub(regexp, "\\1 ", word)
     ret = squish(ret)
@@ -216,11 +216,10 @@ def get_words(text, sep=' '):
     words = Counter()
     if isinstance(text, pl.Series):
         text = text.to_list()
-    if isinstance(text, list):
-        for texti in text:
-            words.update(texti.split(sep))
-    else:
-        words.update(text.split(sep))
+    elif isinstance(text, str):
+        text = [text]
+    for text_ in text:
+        words.update(text_.split(sep))
     words = pl.DataFrame({ \
         'word': words.keys(),
         'freq': words.values() })
@@ -230,13 +229,16 @@ def get_words(text, sep=' '):
 
 def unigram_tokens(word, sep=' '):
     """
-    Get unigram tokens from one word.
+    Get unigram tokens from word(s).
     """
+    if instance(word, list):
+        toks = [*unigram_tokens(word_, sep) for word_ in word]
+        return toks
     if sep is not None and sep != '':
-        ret = word.split(sep)
+        toks = word.split(sep)
     else:
-        ret = word
-    return ret
+        toks = list(word)
+    return toks
 
 
 def unigrams(word, sep=' '):
@@ -246,11 +248,10 @@ def unigrams(word, sep=' '):
     ret = Counter()
     if isinstance(word, pl.Series):
         word = word.to_list()
-    if isinstance(word, list):
-        for wordi in word:
-            ret.update(unigram_tokens(wordi, sep))
-    else:
-        ret.update(unigram_tokens(word, sep))
+    elif isinstance(word, str):
+        word = [word]
+    for word_ in word:
+        ret.update(unigram_tokens(word_, sep))
     ret = pl.DataFrame({ \
         'sym': ret.keys(),
         'freq': ret.values() })
@@ -264,12 +265,13 @@ def bigram_tokens(word, sep=' '):
     """
     Get bigram tokens from one word.
     """
+    if isinstance(word, list):
+        toks = [*bigram_tokens(word_, sep) for word_ in word]
+        return toks
     if sep is not None and sep != '':
-        ret = word.split(sep)
-    else:
-        ret = word
-    ret = list(zip(ret[:-1], ret[1:]))
-    return ret
+        word = word.split(sep)
+    toks = list(zip(word[:-1], word[1:]))
+    return toks
 
 
 def bigrams(word, sep=' '):
@@ -279,11 +281,10 @@ def bigrams(word, sep=' '):
     ret = Counter()
     if isinstance(word, pl.Series):
         word = word.to_list()
-    if isinstance(word, list):
-        for wordi in word:
-            ret.update(bigram_tokens(wordi, sep))
-    else:
-        ret.update(bigram_tokens(word, sep))
+    elif instance(word, str):
+        word = [word]
+    for word_ in word:
+        ret.update(bigram_tokens(word_, sep))
     ret = pl.DataFrame({ \
         'bigram': ret.keys(),
         'freq': ret.values() })
