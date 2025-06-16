@@ -3,6 +3,7 @@
 # todo: mirror str_util.R
 
 import re
+import itertools
 import string
 import polars as pl
 from phtrs import config as phon_config
@@ -144,6 +145,27 @@ def str_subs(word, subs={}, sep=' '):
 
 
 retranscribe = str_subs  # Alias.
+
+# # # # # # # # # #
+# Phonological pseudo-regexps.
+
+
+def combos(s):
+    """
+    Convert common string representations of phonological sets
+    (e.g., set of acceptable onsets) to list of tuples.
+    Ex. combos("(k|g) (r|l|w)") => [(k,r), (k,l), ... (g,w)])
+    """
+    if isinstance(s, (list, set, tuple)):
+        return [tuple(x.split(' ')) for x in s]
+    parts = s.split(' ')
+    parts = [squish(re.sub("[()]", "", part)) for part in parts]
+    parts = [part.split("|") for part in parts]
+    ret = itertools.product(*parts)
+    ret = map(lambda x: tuple(x), ret)
+    ret = list(dict.fromkeys(ret))
+    return ret
+
 
 # # # # # # # # # #
 # Correspondence indices.
