@@ -232,7 +232,9 @@ def unigram_tokens(word, sep=' '):
     Get unigram tokens from word(s).
     """
     if instance(word, list):
-        toks = [*unigram_tokens(word_, sep) for word_ in word]
+        toks = []
+        for word_ in word:
+            toks += unigram_tokens(word_, sep)
         return toks
     if sep is not None and sep != '':
         toks = word.split(sep)
@@ -266,7 +268,9 @@ def bigram_tokens(word, sep=' '):
     Get bigram tokens from one word.
     """
     if isinstance(word, list):
-        toks = [*bigram_tokens(word_, sep) for word_ in word]
+        toks = []
+        for word_ in word:
+            toks += bigram_tokens(word_, sep)
         return toks
     if sep is not None and sep != '':
         word = word.split(sep)
@@ -289,6 +293,24 @@ def bigrams(word, sep=' '):
         'bigram': ret.keys(),
         'freq': ret.values() })
     return ret
+
+
+def gram_tokens(word, k=1, sep=' '):
+    if k == 1:
+        return unigram_tokens(word, sep)
+    if k == 2:
+        return bigram_tokens(word, sep)
+    print('gram_tokens not yet implemented for k>2')
+    return None
+
+
+def grams(word, k=1, sep=' '):
+    if k == 1:
+        return unigrams(word, sep)
+    if k == 2:
+        return bigram(word, sep)
+    print('grams not yet implemented for k>2')
+    return None
 
 
 def lcp(x, y, prefix=True):
