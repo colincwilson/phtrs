@@ -176,10 +176,10 @@ digit2subscript = str.maketrans( \
     digits, subscript_digits)
 
 
-def add_indices(word, skip=[], sep=" "):
+def add_indices(word, skip=[], sep=' '):
     """
     Add integer indices (numbered left-to-right)
-    to symbols in separated word.
+    to end of symbols in separated word(s).
     """
     if isinstance(word, list):
         return [add_indices(word_, sep) for word_ in word]
@@ -198,19 +198,19 @@ def add_indices(word, skip=[], sep=" "):
 
 def remove_indices(word):
     """
-    Remove integer indices from word.
+    Remove integer indices from end of symbols in word(s).
     """
     if isinstance(word, list):
         return [remove_indices(word_) for word_ in word]
-    ret = re.sub(f'[{subscript_digits}]', '', word)
+    ret = re.sub(f'[{subscript_digits}]+$', '', word)
     return ret
 
 
 def as_index(idx):
     """ Convert integer to subscript index. """
     idx = str(idx)
-    if not re.search(f'^[{digits}]+$', idx):
-        return None
+    # if not re.search(f'^[{digits}]+$', idx):
+    #     return None
     ret = idx.translate(digit2subscript)
     return ret
 
