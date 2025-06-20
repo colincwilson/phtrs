@@ -170,8 +170,8 @@ def combos(s):
 # # # # # # # # # #
 # Correspondence indices.
 
-digits = '0123456789'
-subscript_digits = '₀₁₂₃₄₅₆₇₈₉'
+digits = '0123456789-'
+subscript_digits = '₀₁₂₃₄₅₆₇₈₉₋'
 digit2subscript = str.maketrans( \
     digits, subscript_digits)
 
@@ -214,6 +214,8 @@ def as_index(idx):
     ret = idx.translate(digit2subscript)
     return ret
 
+
+to_index = as_index  # Alias.
 
 # def retranscribe_sep(x, subs, sep=' '):
 #     """
