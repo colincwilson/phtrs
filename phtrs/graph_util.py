@@ -1,4 +1,5 @@
 # Graph utilities.
+# todo: index nodes/vertices
 import re, sys
 import igraph
 from nltk.tree import *
@@ -22,19 +23,19 @@ def tree_to_graph(tree):
     """
     Convert tree to graph.
     Returns: igraph.Graph, root node index
-    source: CoPilot (GPT-4.1)
+    orig version: CoPilot (GPT-4.1)
     """
     graph = igraph.Graph(directed=True)
     node_ids = {}
 
     def add_nodes(t, parent_id=None):
         node_id = len(graph.vs)
-        label = t.label() if hasattr(t, "label") else str(t)
+        label = t.label() if hasattr(t, 'label') else str(t)
         graph.add_vertex(name=label, label=label)
         node_ids[id(t)] = node_id
         if parent_id is not None:
             graph.add_edge(parent_id, node_id)
-        if hasattr(t, "height") and t.height() > 1:
+        if hasattr(t, 'height') and t.height() > 1:
             for child in t:
                 add_nodes(child, node_id)
         elif isinstance(t, str):
@@ -42,6 +43,7 @@ def tree_to_graph(tree):
             pass
 
     add_nodes(tree)
+    print(node_ids)
     return graph, 0  # root node index is 0
 
 
