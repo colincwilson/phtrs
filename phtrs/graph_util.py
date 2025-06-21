@@ -47,7 +47,7 @@ def tree_to_graph(tree):
     return graph, 0  # root node index is 0
 
 
-def draw_layered_graph(graph):
+def draw_layered_graph(graph, source=None):
     """
     Layout graph in GraphViz/dot format, arranging vertices
     in rows by 'type' attribute.
@@ -56,28 +56,36 @@ def draw_layered_graph(graph):
     # Group vertices by type
     type_to_nodes = {}
     for v in graph.vs:
-        t = v['type'] if 'type' in v.attributes() else 'undefined'
+        t = v.attributes().get('type', 'undef')
         type_to_nodes.setdefault(t, []).append(v.index)
 
-    lines = ["digraph G {"]
+    lines = ['digraph G {', 'rankdir=LR;', 'node [shape=box]']
     # Create subgraphs for each type to enforce same rank (row).
-    for t, nodes in type_to_nodes.items():
+    types = type_to_nodes.keys()
+    for t in types:
+        nodes = type_to_nodes[t]
         lines.append(f'  subgraph cluster_{t} {{')
         lines.append('    rank=same;')
         for idx in nodes:
             label = graph.vs[idx]['label'] \
-                if 'label' in g.vs[idx].attributes() \
+                if 'label' in graph.vs[idx].attributes() \
                 else str(idx)
             lines.append(f'    {idx} [label="{label}"];')
         lines.append('  }')
 
-    # Add edges
+    # Add edges.
     for e in graph.es:
         src, tgt = e.source, e.target
         lines.append(f'  {src} -> {tgt};')
 
-    lines.append("}")
-    return "\n".join(lines)
+    lines.append('}')
+    ret = '\n'.join(lines)
+
+    # Write to file.
+    if source:
+        with open(source, 'w') as f:
+            f.write(ret)
+    return ret
 
 
 if __name__ == "__main__":
