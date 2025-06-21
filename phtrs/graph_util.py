@@ -47,6 +47,39 @@ def tree_to_graph(tree):
     return graph, 0  # root node index is 0
 
 
+def draw_layered_graph(graph):
+    """
+    Layout graph in GraphViz/dot format, arranging vertices
+    in rows by 'type' attribute.
+    orig version: CoPilot (GPT-4.1)
+    """
+    # Group vertices by type
+    type_to_nodes = {}
+    for v in graph.vs:
+        t = v['type'] if 'type' in v.attributes() else 'undefined'
+        type_to_nodes.setdefault(t, []).append(v.index)
+
+    lines = ["digraph G {"]
+    # Create subgraphs for each type to enforce same rank (row).
+    for t, nodes in type_to_nodes.items():
+        lines.append(f'  subgraph cluster_{t} {{')
+        lines.append('    rank=same;')
+        for idx in nodes:
+            label = graph.vs[idx]['label'] \
+                if 'label' in g.vs[idx].attributes() \
+                else str(idx)
+            lines.append(f'    {idx} [label="{label}"];')
+        lines.append('  }')
+
+    # Add edges
+    for e in graph.es:
+        src, tgt = e.source, e.target
+        lines.append(f'  {src} -> {tgt};')
+
+    lines.append("}")
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     # Example usage of the bracketed_to_igraph function.
     tree_str = "(S (NP (DT The) (NN dog)) (VP (VBD barked)))"
