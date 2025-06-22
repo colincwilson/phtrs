@@ -89,7 +89,7 @@ def draw_layered_graph(graph, source=None):
 
 
 if __name__ == "__main__":
-    # Example usage of the bracketed_to_igraph function.
+    # Test.
     tree_str = "(S (NP (DT The) (NN dog)) (VP (VBD barked)))"
     graph, _ = string_to_graph(tree_str)
     print(list(graph.vs))
