@@ -1,6 +1,6 @@
 # Graph utilities.
 # todo: index nodes/vertices
-import re, sys
+import os, re, sys
 import igraph
 from nltk.tree import *
 
@@ -85,6 +85,10 @@ def draw_layered_graph(graph, source=None):
     if source:
         with open(source, 'w') as f:
             f.write(ret)
+        source_in = str(source)
+        source_out = re.sub('.dot$', '.pdf', source_in)
+        cmd = f'dot -Tpdf {source_in} > {source_out}'
+        os.system(cmd)
     return ret
 
 
