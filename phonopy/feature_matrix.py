@@ -6,7 +6,7 @@ import polars as pl
 import numpy as np
 from collections import namedtuple
 #from unicodedata import normalize
-from phtrs import config as phon_config
+from phonopy import config as phon_config
 # todo: delegate to panphon or phoible if possible
 # todo: warn about missing/nan feature values in matrix
 
@@ -50,11 +50,11 @@ def import_features(feature_file=None,
     """
     Import feature matrix from file with segments in initial column. 
     If segments is specified, eliminates constant and redundant features. 
-    If standardize flag is set:
-    - Add epsilon symbol with all-zero feature vector.
-    - Add symbol-presence feature (sym).
-    - Add begin/end delimiters and feature to identify them (begin:+1, end:-1).
-    - Add feature to identify consonants (C) and vowels (V) (C:+1, V:-1).
+    If standardize flag is set, add:
+    - epsilon symbol with all-zero feature vector.
+    - symbol-presence feature (sym).
+    - bos/eos delimiters and feature to identify them (begin:+1, end:-1).
+    - feature to identify consonants (C) and vowels (V) (C:+1, V:-1).
     Otherwise these symbols and features are assumed to be already 
     present in the feature matrix or file.
     todo: arrange segments in IPA order

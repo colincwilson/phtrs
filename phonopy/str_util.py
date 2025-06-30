@@ -6,7 +6,7 @@ import re
 import itertools
 import string
 import polars as pl
-from phtrs import config as phon_config
+from phonopy import config as phon_config
 from collections import Counter
 
 punc = string.punctuation

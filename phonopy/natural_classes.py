@@ -1,5 +1,5 @@
 import numpy as np
-from phtrs import config as phon_config
+from phonopy import config as phon_config
 
 
 def subsumes(ftrs1, ftrs2):

@@ -1,5 +1,4 @@
 # Graph utilities.
-# todo: index nodes/vertices
 import os, re, sys
 import igraph
 from nltk.tree import *
@@ -52,6 +51,7 @@ def draw_layered_graph(graph, source=None):
     Layout graph in GraphViz/dot format, arranging vertices
     in rows by 'type' attribute.
     orig version: CoPilot (GPT-4.1)
+    todo: color labels
     """
     # Group vertices by type
     type_to_nodes = {}
