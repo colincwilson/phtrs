@@ -1,7 +1,84 @@
-# Graph utilities.
+# Logical queries and visualization of relational structures
+# as represented by graphs with node/vertex and edge attributes.
 import os, re, sys
 import igraph
 from nltk.tree import *
+
+# # # # # # # # # #
+# Queries on structures/graphs.
+
+
+def get_attributes(G, v):
+    """
+    Get attributes of vertex by ID / name / object.
+    """
+    if isinstance(v, int):
+        v = G.vs[v]
+    elif isinstance(v, str):
+        v = G.vs.find(v)
+    return v.attributes()
+
+
+def get_attribute(G, v, key):
+    """
+    Get attribute of vertex by ID / name / object.
+    """
+    return get_attributes(G, v)[key]
+
+
+def isa(G, v, pattern=None, strict=True):
+    """
+    Test vertex v in graph G against {key_i: val_i} pattern
+    or list/tuple of patterns applied disjunctively.
+    """
+    if G is None or v is None:
+        return False
+    if not pattern:
+        return True
+    elif isinstance(pattern, (list, tuple)):
+        # Return True if match any pattern.
+        for pattern_ in pattern:
+            if _isa(G, v, pattern_, strict):
+                return True
+        return False
+    else:
+        return _isa(G, v, pattern, strict)
+
+
+def _isa(G, v, pattern=None, strict=True):
+    """
+    Test vertex v in graph G against {key_i: val_i} pattern.
+    """
+    if G is None or v is None:
+        return False
+    if not pattern:
+        return True
+    for key, val in pattern.items():
+        v_val = get_attribute(G, v, key)
+        if strict and (v_val != val):
+            return False
+        elif not re.search(val, v_val):
+            return False
+    return True
+
+
+def sat(G, v=None, phi=None):
+    """
+    For relational structure G and unary predicate phi
+    (phi represented by a function G,v -> boolean):
+        if v is given, returns true iff G ⊨ phi[v]
+        else returns all v in dom(G) s.t. G ⊨ phi[v].
+    See e.g. Enderton 2001:83 on first-order satisfaction.
+    """
+    if phi is None:
+        return True
+    if v is not None:
+        return phi(G, v)
+    return [v for v in G.vs if phi(G, v)]
+
+
+# # # # # # # # # #
+# Convert string -> tree -> graph; draw graphs.
 
 
 def string_to_tree(syntax_str):
@@ -46,7 +123,11 @@ def tree_to_graph(tree):
     return graph, 0  # root node index is 0
 
 
-def draw_layered_graph(graph, source=None):
+def draw_layered_graph(
+    graph,
+    source=None,
+    color_map=None,
+):
     """
     Layout graph in GraphViz/dot format, arranging vertices
     in rows by 'type' attribute.
@@ -56,7 +137,7 @@ def draw_layered_graph(graph, source=None):
     # Group vertices by type
     type_to_nodes = {}
     for v in graph.vs:
-        t = v.attributes().get('type', 'undef')
+        t = v.attributes().get('typ', 'undef')
         type_to_nodes.setdefault(t, []).append(v.index)
 
     lines = ['digraph G {', 'rankdir=LR;', 'node [shape=box]']
@@ -66,6 +147,8 @@ def draw_layered_graph(graph, source=None):
         nodes = type_to_nodes[t]
         lines.append(f'  subgraph cluster_{t} {{')
         lines.append('    rank=same;')
+        if color_map and t in color_map:
+            lines.append(f'    color="{color_map[t]}"')
         for idx in nodes:
             label = graph.vs[idx]['label'] \
                 if 'label' in graph.vs[idx].attributes() \
@@ -91,6 +174,8 @@ def draw_layered_graph(graph, source=None):
         os.system(cmd)
     return ret
 
+
+# # # # # # # # # #
 
 if __name__ == "__main__":
     # Test.
