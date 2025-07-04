@@ -20,19 +20,16 @@ class FeatureMatrix():
     # todo: warn about missing/nan feature values in matrix
     # see related: torchtext.vocab.Vocab
 
-    def __init__(self,
-                 symbols,
-                 vowels,
-                 features,
-                 ftr_matrix,
-                 ftr_matrix_vec=None):
+    def __init__(self, symbols, vowels, features, ftr_matrix):
         self.symbols = symbols  # Special symbols and segments.
         self.vowels = vowels  # Symbols that are vowels.
         self.features = features  # Feature names.
         # Feature matrix, values in {'+', '-', '0'}.
-        self.ftr_matrix = ftr_matrix  # Feature matrix {'+', '-', '0'}.
-        # Feature matrix, values in {+1., -1., 0.}.
-        self.ftr_matrix_vec = ftr_matrix_vec
+        # format: one row per symbol, features in columns
+        self.ftr_matrix = ftr_matrix
+        # Feature matrix as numpy array, values in {+1., -1., 0.}.
+        # format: one row per symbol, features in columns
+        self.ftr_matrix_vec = self.to_numpy(ftr_matrix)
 
         # Symbol <-> idx.
         self.sym2idx = {}
@@ -48,6 +45,20 @@ class FeatureMatrix():
             ftrs = ftr_matrix.iloc[i, :].to_dict()
             self.sym2ftrs[sym] = ftrs
             self.sym2ftr_vec[sym] = tuple(ftrs.values())
+
+    # todo: make class method
+    def to_numpy(self, ftr_matrix):
+        """
+        Convert feature matrix to numpy ndarray.
+        """
+        ftr_vals = {'+': '1', '+1': '1', '-': '-1'}
+        ftr_matrix_vec = ftr_matrix.copy().replace(ftr_vals)
+        ftr_matrix_vec = ftr_matrix_vec.to_numpy()
+        # for (key, val) in ftr_specs.items():
+        #     ftr_matrix_vec = ftr_matrix_vec.replace( \
+        #         to_replace=key, value=val).astype(float)
+        # ftr_matrix_vec = np.array(ftr_matrix_vec.values)
+        return ftr_matrix_vec
 
     # Methods defined outside of class.
     def get_features(self, x, **kwargs):
@@ -105,7 +116,7 @@ def import_features(feature_file=None,
     segments_all = [x for x in ftr_matrix.iloc[:, 0]]
     features_all = [x for x in ftr_matrix.columns[1:]]
     syll_ftr = [ftr for ftr in features_all \
-        if re.match('^(syl|syllabic)$', ftr)][0]
+        if re.match('^(syl|syll|syllabic)$', ftr)][0]
     ftr_matrix = ftr_matrix.iloc[:, 1:]
 
     # Standardize all segments.
@@ -191,12 +202,9 @@ def import_features(feature_file=None,
 
     # Standardize feature matrix.
     ftr_matrix.index = segments
-    fm = FeatureMatrix(segments, vowels, features, ftr_matrix, None)
+    fm = FeatureMatrix(segments, vowels, features, ftr_matrix)
     if standardize:
         fm = standardize_matrix(fm)
-
-    # Convert to numpy matrix.
-    fm = vectorize_matrix(fm)
 
     # Write feature matrix.
     # todo: pickle FeatureMatrix
@@ -212,7 +220,7 @@ read_features = import_features  # Alias.
 
 
 def default(**kwargs):
-    """ Default features and segments for hot start. """
+    """ Default features and segments for quick start. """
     feature_file = Path.home() / \
             'Code/Python/phonopy/extern/hayes_features.csv'
     segments = [
@@ -236,16 +244,13 @@ def one_hot_features(segments=None,
     if isinstance(segments, int):
         segments = string.ascii_lowercase[:segments]
     features = segments[:]
-    ftr_matrix_vec = np.eye(len(segments))
-    ftr_matrix = pd.DataFrame(ftr_matrix_vec)
+    ftr_matrix = pd.DataFrame( \
+        np.eye(len(segments))
+    )
     ftr_matrix.columns = segments
-    fm = FeatureMatrix(segments, vowels, features, ftr_matrix, ftr_matrix_vec)
+    fm = FeatureMatrix(segments, vowels, features, ftr_matrix)
     if standardize:
         fm = standardize_matrix(fm)
-
-    # Convert to numpy matrix.
-    fm = vectorize_matrix(fm)
-    #print(fm.ftr_matrix_vec)
 
     if save_file:
         ftr_matrix = fm.ftr_matrix
@@ -288,11 +293,11 @@ def standardize_matrix(fm):
     sym_ftr_vals = ['0'] + ['+'] * (len(syms) - 1)
 
     # Delim ftr: bos is +, eos is -,
-    # all others syms unspecified.
+    # all others syms are unspecified.
     delim_ftr_vals = ['0', '+', '-'] + ['0'] * (len(syms) - 3)
 
     # C/V ftr: consonants are +, vowels are -,
-    # all other syms unspecified.
+    # all other syms are unspecified.
     cv_ftr_vals = ['0', '0', '0'] + \
         ['-' if seg in fm.vowels else '+' for seg in fm.symbols]
 
@@ -311,23 +316,11 @@ def standardize_matrix(fm):
     phon_config.delim_ftr = delim_ftr = 1
     phon_config.cv_ftr = cv_ftr = 2
 
-    fm = FeatureMatrix(syms, fm.vowels, features, ftr_matrix,
-                       fm.ftr_matrix_vec)
+    fm = FeatureMatrix(syms, fm.vowels, features, ftr_matrix)
     return fm
 
 
-def vectorize_matrix(fm):
-    """
-    Convert feature columns to numpy vectors.
-    """
-    ftr_matrix_vec = fm.ftr_matrix.copy()
-    ftr_specs = {'+': 1.0, '-': -1.0, '0': 0.0}
-    for (key, val) in ftr_specs.items():
-        ftr_matrix_vec = ftr_matrix_vec.replace(to_replace=key, value=val)
-    ftr_matrix_vec = np.array(ftr_matrix_vec.values)
-    fm = FeatureMatrix(fm.symbols, fm.vowels, fm.features, fm.ftr_matrix,
-                       ftr_matrix_vec)
-    return fm
+# # # # # # # # # #
 
 
 def standardize_segment(x):
@@ -415,6 +408,18 @@ def is_zero(val):
     return ret
 
 
+if __name__ == "__main__":
+    fm = default()
+    print(fm.symbols)
+    print(fm.vowels)
+    print(fm.features)
+    print(fm.ftr_matrix)
+    print(fm.ftr_matrix_vec)
+    #print(fm.ftr_matrix_vec.shape, len(fm.symbols), len(fm.features))
+    get_features(fm, 'a')
+
+# # # # # # # # # #
+
 # deprecated
 # def ftrspec2vec(ftrspecs, feature_matrix=None):
 #     """
@@ -428,7 +433,7 @@ def is_zero(val):
 #     else:
 #         features = config.ftrs
 
-#     specs = {'+': 1.0, '-': -1.0, '0': 0.0}
+#     specs = {'+': 1., '-': -1., '0': 0.}
 #     n = len(features)
 #     w = np.zeros(n)
 #     a = np.zeros(n)
@@ -439,13 +444,5 @@ def is_zero(val):
 #         if i < 0:
 #             print('ftrspec2vec: could not find feature', ftr)
 #         w[i] = specs[spec]  # non-zero feature specification
-#         a[i] = 1.0  # 'attention' weight identifying non-zero feature
+#         a[i] = 1.  # 'attention' weight identifying non-zero feature
 #     return w, a
-
-if __name__ == "__main__":
-    fm = default_features()
-    print(fm.symbols)
-    print(fm.vowels)
-    print(fm.features)
-    print(fm.ftr_matrix)
-    get_features(fm, 'a')
