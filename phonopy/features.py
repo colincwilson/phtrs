@@ -219,19 +219,6 @@ def import_features(feature_file=None,
 read_features = import_features  # Alias.
 
 
-def default(**kwargs):
-    """ Default features and segments for quick start. """
-    feature_file = Path.home() / \
-            'Code/Python/phonopy/extern/hayes_features.csv'
-    segments = [
-        'p', 'b', 't', 'd', 't͡ʃ', 'k', 'g', 'ʔ', 'f', 's', 'ʃ', 'h', 'm', 'n',
-        'ɲ', 'ŋ', 'r', 'j', 'w', 'l'
-    ] + ['i', 'e', 'a', 'o', 'u']
-    # ref. Maddieson (1986)
-    fm = import_features(feature_file, segments, **kwargs)
-    return fm
-
-
 def one_hot_features(segments=None,
                      vowels=None,
                      standardize=True,
@@ -257,6 +244,19 @@ def one_hot_features(segments=None,
         ftr_matrix.to_csv(save_file.with_suffix('.ftr'), index_label='ipa')
 
     setattr(phon_config, 'feature_matrix', fm)
+    return fm
+
+
+def default(**kwargs):
+    """ Default features and segments for quick start. """
+    feature_file = Path.home() / \
+            'Code/Python/phonopy/extern/hayes_features.csv'
+    segments = [
+        'p', 'b', 't', 'd', 't͡ʃ', 'k', 'g', 'ʔ', 'f', 's', 'ʃ', 'h', 'm', 'n',
+        'ɲ', 'ŋ', 'r', 'j', 'w', 'l'
+    ] + ['i', 'e', 'a', 'o', 'u']
+    # ref. Maddieson (1986)
+    fm = import_features(feature_file, segments, **kwargs)
     return fm
 
 
@@ -321,6 +321,7 @@ def standardize_matrix(fm):
 
 
 # # # # # # # # # #
+# Segments and natural classes.
 
 
 def standardize_segment(x):
@@ -363,7 +364,7 @@ def get_features(fm, x, keep_zero=True):
     return dict(ret)
 
 
-def natural_class(fm, ftrs=None, **kwargs):
+def natural_class(fm, ftrs=None, to_regexp=False, **kwargs):
     """
     Return subset of segments in natural class
     defined by feature-value dict ftrs.
@@ -387,6 +388,11 @@ def natural_class(fm, ftrs=None, **kwargs):
         ftrs_x = fm.get_features(x)
         if subsumes(ftrs, ftrs_x):
             ret.add(x)
+    # Optionally convert to regexp.
+    if to_regexp:
+        ret = list(ret)
+        ret.sort(key=lambda x: fm.symbols.index(x))
+        ret = '(' + '|'.join(ret) + ')'
     return ret
 
 
@@ -407,6 +413,8 @@ def is_zero(val):
     ret = (val == '0') or (val == 0) or (val is None)
     return ret
 
+
+# # # # # # # # # #
 
 if __name__ == "__main__":
     fm = default()
