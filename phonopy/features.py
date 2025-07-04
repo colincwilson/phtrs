@@ -53,7 +53,7 @@ class FeatureMatrix():
         """
         ftr_vals = {'+': '1', '+1': '1', '-': '-1'}
         ftr_matrix_vec = ftr_matrix.copy().replace(ftr_vals)
-        ftr_matrix_vec = ftr_matrix_vec.to_numpy()
+        ftr_matrix_vec = ftr_matrix_vec.to_numpy(dtype=float)
         # for (key, val) in ftr_specs.items():
         #     ftr_matrix_vec = ftr_matrix_vec.replace( \
         #         to_replace=key, value=val).astype(float)
