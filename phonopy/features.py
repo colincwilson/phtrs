@@ -49,6 +49,16 @@ class FeatureMatrix():
             self.sym2ftrs[sym] = ftrs
             self.sym2ftr_vec[sym] = tuple(ftrs.values())
 
+    # Methods defined outside of class.
+    def get_features(self, x, **kwargs):
+        return get_features(self, x, **kwargs)
+
+    def natural_class(self, **kwargs):
+        return natural_class(self, **kwargs)
+
+    def subsumes(self, ftrs1, ftrs2, **kwargs):
+        return subsumes(ftrs1, ftrs2, **kwargs)
+
 
 def import_features(feature_file=None,
                     segments=None,
@@ -201,7 +211,7 @@ def import_features(feature_file=None,
 read_features = import_features  # Alias.
 
 
-def default_features(**kwargs):
+def default(**kwargs):
     """ Default features and segments for hot start. """
     feature_file = Path.home() / \
             'Code/Python/phonopy/extern/hayes_features.csv'
@@ -332,16 +342,83 @@ def standardize_segment(x):
     return y
 
 
-def get_features(x):
+def get_features(fm, x, keep_zero=True):
     """
-    Return features of one segment, or shared features
-    of collection of segments, as ftr/val dict.
+    Return feature values of one segment, or feature
+    values shared by a collection of segments.
     """
+    empty = dict()
+    # None / empty string / empty collection.
+    if not x:  #
+        return empty
+    # Single segment.
+    if isinstance(x, str):
+        ret = fm.sym2ftrs.get(x, empty).items()
+    # Collection of segments.
+    else:
+        ret = None
+        for xi in x:
+            ftrsi = fm.sym2ftrs.get(xi, empty)
+            if ret is None:
+                ret = ftrsi.items()
+            else:
+                ret = ret & ftrsi.items()
+    # Optionally remove zero-valued features.
+    if not keep_zero:
+        ret = [(ftr, val) for (ftr,val) in ret \
+            if not is_zero(val)]
+    return dict(ret)
+
+
+def natural_class(fm, ftrs=None, **kwargs):
+    """
+    Return subset of segments in natural class
+    defined by feature-value dict ftrs.
+    """
+    # Arg feature values.
+    if not ftrs:
+        ftrs = dict()
+    for (key, val) in kwargs.items():
+        ftrs[key] = val
+    for key in ftrs:
+        val = ftrs[key]
+        if (val == 1 or val == '+1'):
+            ftrs[key] = '+'
+        elif (val == -1 or val == '-1'):
+            ftrs[key] = '-'
+    # Natural class by subsumption.
+    ret = set()
+    if len(ftrs) == 0:
+        return ret
+    for x in fm.symbols:
+        ftrs_x = fm.get_features(x)
+        if subsumes(ftrs, ftrs_x):
+            ret.add(x)
+    return ret
+
+
+def subsumes(ftrs1, ftrs2):
+    """
+    Feature-value dict ftrs1 subsumes ftrs2 iff every
+    non-zero feature value in ftrs1 is also in ftrs2.
+    """
+    for ftr, val in ftrs1.items():
+        if is_zero(val):
+            continue
+        if ftrs2.get(ftr) != val:
+            return False
+    return True
+
+
+def is_zero(val):
+    ret = (val == '0') or (val == 0) or (val is None)
+    return ret
 
 
 # deprecated
 # def ftrspec2vec(ftrspecs, feature_matrix=None):
 #     """
+
 #     Convert dictionary of feature specifications (ftr -> +/-/0)
 #     to feature + 'attention' vectors.
 #     If feature_matrix is omitted, default to environ.config.
@@ -371,3 +448,4 @@ if __name__ == "__main__":
     print(fm.vowels)
     print(fm.features)
     print(fm.ftr_matrix)
+    get_features(fm, 'a')
