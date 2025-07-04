@@ -1,0 +1,7 @@
+ipa,sym,begin/end,C/V,syllabic,consonantal,sonorant,continuant,delayed.release,approximant,voice,LABIAL,DORSAL,high,low,front,back
+ϵ,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+⋊,+,+,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+⋉,+,-,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+a,+,0,-,+,-,+,+,0,+,+,-,+,-,+,-,-
+p,+,0,+,-,+,-,-,-,-,-,+,-,0,0,0,0
+b,+,0,+,-,+,-,-,-,-,+,+,-,0,0,0,0

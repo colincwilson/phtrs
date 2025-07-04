@@ -1,18 +1,24 @@
-# Prepare feature matrix for pytorch module.
+# Read and standardize phonological feature matrices;
+# prepare features matrices for use in pytorch.
+# Typical import:
+# from phonopy import features as phon_features
 import re, string, sys
 from pathlib import Path
 import pandas as pd  # todo: replace with polars
-import polars as pl
+#import polars as pl
 import numpy as np
 from collections import namedtuple
 #from unicodedata import normalize
+
 from phonopy import config as phon_config
-# todo: delegate to panphon or phoible if possible
-# todo: warn about missing/nan feature values in matrix
 
 
 class FeatureMatrix():
-    # see: torchtext.vocab.Vocab
+    """ Container for matrix of phonological features. """
+
+    # todo: delegate to panphon or phoible if possible
+    # todo: warn about missing/nan feature values in matrix
+    # see related: torchtext.vocab.Vocab
 
     def __init__(self,
                  symbols,
@@ -23,8 +29,10 @@ class FeatureMatrix():
         self.symbols = symbols  # Special symbols and segments.
         self.vowels = vowels  # Symbols that are vowels.
         self.features = features  # Feature names.
+        # Feature matrix, values in {'+', '-', '0'}.
         self.ftr_matrix = ftr_matrix  # Feature matrix {'+', '-', '0'}.
-        self.ftr_matrix_vec = ftr_matrix_vec  # Feature matrix {+1.0, -1.0, 0.0}.
+        # Feature matrix, values in {+1., -1., 0.}.
+        self.ftr_matrix_vec = ftr_matrix_vec
 
         # Symbol <-> idx.
         self.sym2idx = {}
@@ -48,7 +56,7 @@ def import_features(feature_file=None,
                     save_file=None,
                     verbose=True):
     """
-    Import feature matrix from file with segments in initial column. 
+    Read feature matrix from file with segments in initial column. 
     If segments is specified, eliminates constant and redundant features. 
     If standardize flag is set, add:
     - epsilon symbol with all-zero feature vector.
@@ -90,11 +98,8 @@ def import_features(feature_file=None,
         if re.match('^(syl|syllabic)$', ftr)][0]
     ftr_matrix = ftr_matrix.iloc[:, 1:]
 
-    # Normalize unicode. [partial]
-    # no script g, no tiebars, ...
-    ipa_substitutions = {'\u0261': 'g', 'ɡ': 'g', 'ɡ': 'g', '͡': ''}
-    for (s, r) in ipa_substitutions.items():
-        segments_all = [re.sub(s, r, x) for x in segments_all]
+    # Standardize all segments.
+    segments_all = [standardize_segment(x) for x in segments_all]
     #print('segments_all:', segments_all)
 
     # Handle segments with diacritics. [partial]
@@ -112,6 +117,8 @@ def import_features(feature_file=None,
     ]
     diacritic_segs = []
     if segments is not None:
+        # Standardize segments.
+        segments = [standardize_segment(seg) for seg in segments]
         for seg in segments:
             # Detect and strip diacritics.
             base_seg = seg
@@ -169,7 +176,7 @@ def import_features(feature_file=None,
         features = features_all
 
     # Syllabic segments.
-    vowels = [ x for i, x in enumerate(segments) \
+    vowels = [x for i, x in enumerate(segments) \
         if ftr_matrix[syll_ftr][i] == '+']
 
     # Standardize feature matrix.
@@ -182,11 +189,14 @@ def import_features(feature_file=None,
     fm = vectorize_matrix(fm)
 
     # Write feature matrix.
-    if save_file is not None:
+    if save_file:
         fm.ftr_matrix.to_csv(save_file.with_suffix('.ftr'), index_label='ipa')
 
     setattr(phon_config, 'feature_matrix', fm)
     return fm
+
+
+read_features = import_features  # Alias.
 
 
 def one_hot_features(segments=None,
@@ -210,9 +220,9 @@ def one_hot_features(segments=None,
 
     # Convert to numpy matrix.
     fm = vectorize_matrix(fm)
-    print(fm.ftr_matrix_vec)
+    #print(fm.ftr_matrix_vec)
 
-    if save_file is not None:
+    if save_file:
         ftr_matrix = fm.ftr_matrix
         ftr_matrix.to_csv(save_file.with_suffix('.ftr'), index_label='ipa')
 
@@ -295,40 +305,61 @@ def vectorize_matrix(fm):
     return fm
 
 
-# deprecated
-def ftrspec2vec(ftrspecs, feature_matrix=None):
+def standardize_segment(x):
     """
-    Convert dictionary of feature specifications (ftr -> +/-/0) 
-    to feature + 'attention' vectors.
-    If feature_matrix is omitted, default to environ.config.
+    Standardize phonetic segment (partial implementation):
+    no script g, no tiebars, ...
     """
-    if feature_matrix is not None:
-        features = feature_matrix.features
-    else:
-        features = config.ftrs
+    ipa_substitutions = {'\u0261': 'g', 'ɡ': 'g', 'ɡ': 'g', '͡': ''}
+    y = x
+    for (s, r) in ipa_substitutions.items():
+        y = re.sub(s, r, y)
+    return y
 
-    specs = {'+': 1.0, '-': -1.0, '0': 0.0}
-    n = len(features)
-    w = np.zeros(n)
-    a = np.zeros(n)
-    for ftr, spec in ftrspecs.items():
-        if spec == '0':
-            continue
-        i = features.index(ftr)
-        if i < 0:
-            print('ftrspec2vec: could not find feature', ftr)
-        w[i] = specs[spec]  # non-zero feature specification
-        a[i] = 1.0  # 'attention' weight identifying non-zero feature
-    return w, a
+
+# deprecated
+# def ftrspec2vec(ftrspecs, feature_matrix=None):
+#     """
+#     Convert dictionary of feature specifications (ftr -> +/-/0)
+#     to feature + 'attention' vectors.
+#     If feature_matrix is omitted, default to environ.config.
+#     """
+#     if feature_matrix is not None:
+#         features = feature_matrix.features
+#     else:
+#         features = config.ftrs
+
+#     specs = {'+': 1.0, '-': -1.0, '0': 0.0}
+#     n = len(features)
+#     w = np.zeros(n)
+#     a = np.zeros(n)
+#     for ftr, spec in ftrspecs.items():
+#         if spec == '0':
+#             continue
+#         i = features.index(ftr)
+#         if i < 0:
+#             print('ftrspec2vec: could not find feature', ftr)
+#         w[i] = specs[spec]  # non-zero feature specification
+#         a[i] = 1.0  # 'attention' weight identifying non-zero feature
+#     return w, a
 
 
 def test():
-    feature_file = Path.home() \
-        / 'Code/Python/transmorph/features/hayes_features.csv'
-    import_features( \
+    # feature_file = Path.home() / \
+    #     / 'Code/Python/transmorph/features/hayes_features.csv'
+    feature_file = Path.home() / \
+        'Code/Python/phonopy/extern/hayes_features.csv'
+    fm = import_features( \
         feature_file,
-        segments=['b', 'a'],
-        save_file=Path('./tmp'))
+        segments=['p', 'b', 't', 'd', 't͡ʃ', 'k', 'g', 'ʔ', 'f', 's', 'ʃ', 'h', 'm', 'n', 'ɲ', 'ŋ', 'r', 'j', 'w', 'l'] + ['i', 'e', 'a', 'o', 'u'],
+        standardize=True,
+        save_file=None,
+        verbose=False)
+    print(fm.symbols)
+    print(fm.vowels)
+    print(fm.features)
+    print(fm.ftr_matrix)
+    #print(fm)
 
 
 if __name__ == "__main__":
