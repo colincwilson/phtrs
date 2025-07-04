@@ -189,8 +189,10 @@ def import_features(feature_file=None,
     fm = vectorize_matrix(fm)
 
     # Write feature matrix.
+    # todo: pickle FeatureMatrix
     if save_file:
-        fm.ftr_matrix.to_csv(save_file.with_suffix('.ftr'), index_label='ipa')
+        save_file = Path(save_file).with_suffix('.ftr')
+        fm.ftr_matrix.to_csv(save_file, index_label='ipa')
 
     setattr(phon_config, 'feature_matrix', fm)
     return fm

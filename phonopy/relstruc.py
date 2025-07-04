@@ -1,5 +1,5 @@
 # Logical queries and visualization of relational structures
-# as represented by graphs with node/vertex and edge attributes.
+# represented by graphs with node/vertex and edge attributes.
 import os, re, sys
 import igraph
 from nltk.tree import *
