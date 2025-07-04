@@ -201,6 +201,19 @@ def import_features(feature_file=None,
 read_features = import_features  # Alias.
 
 
+def default_features(**kwargs):
+    """ Default features and segments for hot start. """
+    feature_file = Path.home() / \
+            'Code/Python/phonopy/extern/hayes_features.csv'
+    segments = [
+        'p', 'b', 't', 'd', 't͡ʃ', 'k', 'g', 'ʔ', 'f', 's', 'ʃ', 'h', 'm', 'n',
+        'ɲ', 'ŋ', 'r', 'j', 'w', 'l'
+    ] + ['i', 'e', 'a', 'o', 'u']
+    # ref. Maddieson (1986)
+    fm = import_features(feature_file, segments, **kwargs)
+    return fm
+
+
 def one_hot_features(segments=None,
                      vowels=None,
                      standardize=True,
@@ -309,7 +322,7 @@ def vectorize_matrix(fm):
 
 def standardize_segment(x):
     """
-    Standardize phonetic segment (partial implementation):
+    Standardize segment (partial implementation):
     no script g, no tiebars, ...
     """
     ipa_substitutions = {'\u0261': 'g', 'ɡ': 'g', 'ɡ': 'g', '͡': ''}
@@ -317,6 +330,13 @@ def standardize_segment(x):
     for (s, r) in ipa_substitutions.items():
         y = re.sub(s, r, y)
     return y
+
+
+def get_features(x):
+    """
+    Return features of one segment, or shared features
+    of collection of segments, as ftr/val dict.
+    """
 
 
 # deprecated
@@ -345,24 +365,9 @@ def standardize_segment(x):
 #         a[i] = 1.0  # 'attention' weight identifying non-zero feature
 #     return w, a
 
-
-def test():
-    # feature_file = Path.home() / \
-    #     / 'Code/Python/transmorph/features/hayes_features.csv'
-    feature_file = Path.home() / \
-        'Code/Python/phonopy/extern/hayes_features.csv'
-    fm = import_features( \
-        feature_file,
-        segments=['p', 'b', 't', 'd', 't͡ʃ', 'k', 'g', 'ʔ', 'f', 's', 'ʃ', 'h', 'm', 'n', 'ɲ', 'ŋ', 'r', 'j', 'w', 'l'] + ['i', 'e', 'a', 'o', 'u'],
-        standardize=True,
-        save_file=None,
-        verbose=False)
+if __name__ == "__main__":
+    fm = default_features()
     print(fm.symbols)
     print(fm.vowels)
     print(fm.features)
     print(fm.ftr_matrix)
-    #print(fm)
-
-
-if __name__ == "__main__":
-    test()
