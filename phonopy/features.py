@@ -64,11 +64,14 @@ class FeatureMatrix():
     def get_features(self, x, **kwargs):
         return get_features(self, x, **kwargs)
 
+    def subsumes(self, ftrs1, ftrs2, **kwargs):
+        return subsumes(ftrs1, ftrs2, **kwargs)
+
     def natural_class(self, **kwargs):
         return natural_class(self, **kwargs)
 
-    def subsumes(self, ftrs1, ftrs2, **kwargs):
-        return subsumes(ftrs1, ftrs2, **kwargs)
+    def to_regexp(self, ftrs, **kwargs):
+        return to_regexp(self, ftrs, **kwargs)
 
 
 def import_features(feature_file=None,
@@ -263,7 +266,7 @@ def default(**kwargs):
 def standardize_matrix(fm):
     """
     Add special symbols (epsilon, bos, eos) and features 
-    (sym, begin/end, C/V) to feature matrix.
+    (sym, begin/end, seg, C/V) to feature matrix.
     """
     if fm.vowels is None:
         print('Vowels must be specified to standardize feature matrix')
@@ -296,6 +299,10 @@ def standardize_matrix(fm):
     # all others syms are unspecified.
     delim_ftr_vals = ['0', '+', '-'] + ['0'] * (len(syms) - 3)
 
+    # Seg ftr: consonants and vowels are '+',
+    # all other syms are unspecified.
+    seg_ftr_vals = ['0', '0', '0'] + ['+'] * (len(syms) - 3)
+
     # C/V ftr: consonants are +, vowels are -,
     # all other syms are unspecified.
     cv_ftr_vals = ['0', '0', '0'] + \
@@ -306,15 +313,17 @@ def standardize_matrix(fm):
     special_ftrs = pd.DataFrame({
         'sym': sym_ftr_vals,
         'begin/end': delim_ftr_vals,
+        'seg': seg_ftr_vals,
         'C/V': cv_ftr_vals
     })
     ftr_matrix = pd.concat([special_ftrs, ftr_matrix], axis=1) \
                    .reset_index(drop=True)
     ftr_matrix.index = syms
-    features = ['sym', 'begin/end', 'C/V', *fm.features]
+    features = ['sym', 'begin/end', 'seg', 'C/V', *fm.features]
     phon_config.sym_ftr = sym_ftr = 0
     phon_config.delim_ftr = delim_ftr = 1
-    phon_config.cv_ftr = cv_ftr = 2
+    phon_config.seg_ftr = seg_ftr = 2
+    phon_config.cv_ftr = cv_ftr = 3
 
     fm = FeatureMatrix(syms, fm.vowels, features, ftr_matrix)
     return fm
@@ -364,6 +373,19 @@ def get_features(fm, x, keep_zero=True):
     return dict(ret)
 
 
+def subsumes(ftrs1, ftrs2):
+    """
+    Feature-value dict ftrs1 subsumes ftrs2 iff every
+    non-zero feature value in ftrs1 is also in ftrs2.
+    """
+    for ftr, val in ftrs1.items():
+        if is_zero(val):
+            continue
+        if ftrs2.get(ftr) != val:
+            return False
+    return True
+
+
 def natural_class(fm, ftrs=None, to_regexp=False, **kwargs):
     """
     Return subset of segments in natural class
@@ -381,13 +403,13 @@ def natural_class(fm, ftrs=None, to_regexp=False, **kwargs):
         elif (val == -1 or val == '-1'):
             ftrs[key] = '-'
     # Natural class by subsumption.
-    ret = set()
-    if len(ftrs) == 0:
-        return ret
-    for x in fm.symbols:
-        ftrs_x = fm.get_features(x)
-        if subsumes(ftrs, ftrs_x):
-            ret.add(x)
+    if not ftrs:
+        ret = set([x for x in fm.symbols if x != phon_config.epsilon])
+    else:
+        ret = set([
+            x for x, ftrs_x in fm.sym2ftrs.items()
+            if subsumes(ftrs, ftrs_x) and x != phon_config.epsilon
+        ])
     # Optionally convert to regexp.
     if to_regexp:
         ret = list(ret)
@@ -396,17 +418,26 @@ def natural_class(fm, ftrs=None, to_regexp=False, **kwargs):
     return ret
 
 
-def subsumes(ftrs1, ftrs2):
+def to_regexp(fm, ftrs):
     """
-    Feature-value dict ftrs1 subsumes ftrs2 iff every
-    non-zero feature value in ftrs1 is also in ftrs2.
+    Convert sequence of feature matrices to regexp.
+    note: '[]' interpreted as all non-special symbols.
     """
-    for ftr, val in ftrs1.items():
-        if is_zero(val):
-            continue
-        if ftrs2.get(ftr) != val:
-            return False
-    return True
+    ftrs = ftrs.replace(r'\\s', '')
+    ftrs = ftrs.replace(r'[', '')
+    ftrs = ftrs.split(r']')[:-1]
+    print(ftrs)
+    ret = []
+    for ftrs1 in ftrs:
+        # if ftrs1 == '[]':
+        #     ftrs1 = '+sym,-begin/end'
+        ftrs1 = ftrs1.split(',')
+        ftrs1 = {x[1:]: x[0] for x in ftrs1 if len(x) > 1}
+        regexp1 = fm.natural_class(ftrs=ftrs1, to_regexp=True)
+        ret.append(regexp1)
+    ret = ''.join(ret)
+    print(ret)
+    return ret
 
 
 def is_zero(val):
@@ -424,7 +455,9 @@ if __name__ == "__main__":
     print(fm.ftr_matrix)
     print(fm.ftr_matrix_vec)
     #print(fm.ftr_matrix_vec.shape, len(fm.symbols), len(fm.features))
-    get_features(fm, 'a')
+    fm.get_features('a')
+    fm.to_regexp('[+syllabic][-syllabic]')
+    fm.to_regexp('[][+syllabic]')
 
 # # # # # # # # # #
 
