@@ -12,6 +12,17 @@ from collections import namedtuple
 
 from phonopy import config as phon_config
 
+default_feature_file = Path.home() / \
+    'Code/Python/phonopy/extern/hayes_features.csv'
+
+default_segments = [
+    'p', 'b', 't', 'd', 't͡ʃ', 'k', 'g', 'ʔ', 'f', 's', 'ʃ', 'h', 'm', 'n',
+    'ɲ', 'ŋ', 'r', 'j', 'w', 'l'
+] + ['i', 'e', 'a', 'o', 'u']
+# ref. Maddieson (1986)
+
+# # # # # # # # # #
+
 
 class FeatureMatrix():
     """ Container for matrix of phonological features. """
@@ -74,13 +85,13 @@ class FeatureMatrix():
         return to_regexp(self, ftrs, **kwargs)
 
 
-def import_features(feature_file=None,
+def import_features(feature_file=default_feature_file,
                     segments=None,
                     standardize=True,
                     save_file=None,
                     verbose=True):
     """
-    Read feature matrix from file with segments in initial column. 
+    Read feature matrix from file with segments in first *column*. 
     If segments is specified, eliminates constant and redundant features. 
     If standardize flag is set, add:
     - epsilon symbol with all-zero feature vector.
@@ -252,14 +263,8 @@ def one_hot_features(segments=None,
 
 def default(**kwargs):
     """ Default features and segments for quick start. """
-    feature_file = Path.home() / \
-            'Code/Python/phonopy/extern/hayes_features.csv'
-    segments = [
-        'p', 'b', 't', 'd', 't͡ʃ', 'k', 'g', 'ʔ', 'f', 's', 'ʃ', 'h', 'm', 'n',
-        'ɲ', 'ŋ', 'r', 'j', 'w', 'l'
-    ] + ['i', 'e', 'a', 'o', 'u']
-    # ref. Maddieson (1986)
-    fm = import_features(feature_file, segments, **kwargs)
+    fm = import_features( \
+        default_feature_file, default_segments, **kwargs)
     return fm
 
 
@@ -421,22 +426,20 @@ def natural_class(fm, ftrs=None, to_regexp=False, **kwargs):
 def to_regexp(fm, ftrs):
     """
     Convert sequence of feature matrices to regexp.
-    note: '[]' interpreted as all non-special symbols.
+    note: '[]' is interpreted as [+seg(ment)].
     """
-    ftrs = ftrs.replace(r'\\s', '')
-    ftrs = ftrs.replace(r'[', '')
+    ftrs = re.sub(r'\s+', '', ftrs)
+    ftrs = re.sub(r'\[', '', ftrs)
     ftrs = ftrs.split(r']')[:-1]
-    print(ftrs)
     ret = []
     for ftrs1 in ftrs:
-        # if ftrs1 == '[]':
-        #     ftrs1 = '+sym,-begin/end'
+        if ftrs1 == '':
+            ftrs1 = '+seg'
         ftrs1 = ftrs1.split(',')
         ftrs1 = {x[1:]: x[0] for x in ftrs1 if len(x) > 1}
         regexp1 = fm.natural_class(ftrs=ftrs1, to_regexp=True)
         ret.append(regexp1)
     ret = ''.join(ret)
-    print(ret)
     return ret
 
 
@@ -455,9 +458,9 @@ if __name__ == "__main__":
     print(fm.ftr_matrix)
     print(fm.ftr_matrix_vec)
     #print(fm.ftr_matrix_vec.shape, len(fm.symbols), len(fm.features))
-    fm.get_features('a')
-    fm.to_regexp('[+syllabic][-syllabic]')
-    fm.to_regexp('[][+syllabic]')
+    print(fm.get_features('a'))
+    print(fm.to_regexp('[+ syllabic ][-syllabic]'))
+    print(fm.to_regexp('[][+syllabic]'))
 
 # # # # # # # # # #
 
