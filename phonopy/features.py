@@ -265,7 +265,7 @@ def one_hot_features(segments=None,
     return fm
 
 
-def default(**kwargs):
+def default_features(**kwargs):
     """ Default features and segments for quick start. """
     fm = import_features( \
         default_feature_file, default_segments, **kwargs)
@@ -515,7 +515,7 @@ def is_zero(val):
 # # # # # # # # # #
 
 if __name__ == "__main__":
-    fm = default()
+    fm = default_features()
     print(fm.symbols)
     print(fm.vowels)
     print(fm.features)

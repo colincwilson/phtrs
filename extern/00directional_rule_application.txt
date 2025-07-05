@@ -1,0 +1,59 @@
+Kaplan & Kaye
+
+Left-to-right
+Prologue o
+Id(Rightcontext(rho, <, >)) o
+Replace o
+Id(Leftcontext(lambda, <, >)) o
+Prologue^{-1}
+
+Right-to-left
+Prologue o
+Id(Leftcontext(lambda, <, >)) o
+Replace o
+Id(Rightcontext(rho, <, >)) o
+Prologue^{-1}
+
+Simultaneous
+Prologue o
+Id(Leftcontext(lambda, <, >) \cap Rightcontext(rho, <, >)) o
+Replace o
+Prologue^{-1}
+
+
+Mohri & Sproat
+
+Left-to-right
+r o f o replace o l1 o l2
+
+van Noord translation:
+macro(replace(L, Phi, Psi, R),
+r(R) o f(Phi) o replace(Phi, Psi) o l1(L) o l2(L)
+
+guess about right-to-left:
+macro(replace(L, Phi, Psi, R),
+r(L) o f(Phi) o replace(Phi, Psi) o l1(R) o l2(R))
+
+
+van Noord
+
+Left-to-right
+macro(replace(T0,Left0,Right), pragma([T-T0,Left-Left0],cleanup(
+      non_markers
+          o
+       m(r(Right))
+          o
+      f(domain(T))
+          o
+ left_to_right(domain(T))
+          o
+ longest_match(domain(T))
+          o
+    aux_replace(T)
+          o
+       l1(Left)
+          o
+       l2(Left)
+          o
+   inverse(non_markers) ))
+     ).
