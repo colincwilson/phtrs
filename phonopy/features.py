@@ -417,13 +417,14 @@ def subsumes(ftrs1, ftrs2):
 
 def natural_class(fm, ftrs=None, **kwargs):
     """
-    Return set of symbols in natural class
+    Return natural class (= set of symbols)
     defined by feature-value dict ftrs.
     """
-    # Handle string ftrs arg.
+    # Handle feature-matrix string.
     if isinstance(ftrs, str):
-        return [natural_class(fm, ftrs1) for ftrs1 in from_str(fm, ftrs)]
-    # Handle dict ftrs and keyword args.
+        ftrs = from_str(fm, ftrs)
+        return [natural_class(fm, ftrs1) for ftrs1 in ftrs]
+    # Handle feature-value dict and keyword args.
     if not ftrs:
         ftrs = dict()
     for (key, val) in kwargs.items():
@@ -466,10 +467,21 @@ def from_str(fm, ftrs):
 
 def to_str(fm, ftrs):
     """
-    Convert sequence of natural classes to
-    sequence of feature matrices.
+    Convert sequence of feature-value dicts to
+    feature-matrix string.
     """
-    pass  # todo
+    if not ftrs:
+        return ''
+    if not isinstance(ftrs, (list, tuple)):
+        ftrs = [ftrs]
+    ret = []
+    for ftrs1 in ftrs:
+        ftrs1 = list(ftrs1.items())
+        ftrs1.sort(key=lambda ftr_val: fm.features.index(ftr_val[0]))
+        ret1 = [f'{val}{ftr}' for ftr, val in ftrs1 if not is_zero(val)]
+        ret1 = '[' + ', '.join(ret1) + ']'
+        ret.append(ret1)
+    return ''.join(ret)
 
 
 def to_regexp(fm, syms):
@@ -521,6 +533,10 @@ if __name__ == "__main__":
     delta = fm.get_change('o', 't')
     result = fm.get_features('o') | delta
     print(fm.natural_class(result))
+
+    ftrs = get_features(fm, ['i', 'e', 'a', 'o', 'u'])
+    ftrs_str = to_str(fm, ftrs)
+    print(ftrs_str)
 
 # # # # # # # # # #
 
