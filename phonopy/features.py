@@ -75,11 +75,14 @@ class FeatureMatrix():
     def get_features(self, x, **kwargs):
         return get_features(self, x, **kwargs)
 
+    def get_change(self, x, y, **kwargs):
+        return get_change(self, x, y, **kwargs)
+
     def subsumes(self, ftrs1, ftrs2, **kwargs):
         return subsumes(ftrs1, ftrs2, **kwargs)
 
-    def natural_class(self, **kwargs):
-        return natural_class(self, **kwargs)
+    def natural_class(self, ftrs=None, **kwargs):
+        return natural_class(self, ftrs, **kwargs)
 
     def to_regexp(self, ftrs, **kwargs):
         return to_regexp(self, ftrs, **kwargs)
@@ -95,9 +98,10 @@ def import_features(feature_file=default_feature_file,
     If segments is specified, eliminates constant and redundant features. 
     If standardize flag is set, add:
     - epsilon symbol with all-zero feature vector.
-    - symbol-presence feature (sym).
+    - symbol-presence feature 'sym'.
     - bos/eos delimiters and feature to identify them (begin:+1, end:-1).
-    - feature to identify consonants (C) and vowels (V) (C:+1, V:-1).
+    - feature 'seg' to identify all segments (non-epsilon/bos/eos).
+    - feature 'C/V' to identify consonants (C) and vowels (V) (C:+1, V:-1).
     Otherwise these symbols and features are assumed to be already 
     present in the feature matrix or file.
     todo: arrange segments in IPA order
@@ -378,6 +382,26 @@ def get_features(fm, x, keep_zero=True):
     return dict(ret)
 
 
+def get_change(fm, x, y):
+    """
+    Return (features of y) - (features of x).
+    """
+    if isinstance(x, str):
+        ftrs_x = get_features(fm, x)
+    else:
+        ftrs_x = x
+    if isinstance(x, str):
+        ftrs_y = get_features(fm, y)
+    else:
+        ftrs_y = y
+    ret = {}
+    for ftr in fm.features:
+        val = ftrs_y.get(ftr, '0')
+        if ftrs_x.get(ftr, '0') != val:
+            ret[ftr] = val
+    return ret
+
+
 def subsumes(ftrs1, ftrs2):
     """
     Feature-value dict ftrs1 subsumes ftrs2 iff every
@@ -391,23 +415,27 @@ def subsumes(ftrs1, ftrs2):
     return True
 
 
-def natural_class(fm, ftrs=None, to_regexp=False, **kwargs):
+def natural_class(fm, ftrs=None, **kwargs):
     """
-    Return subset of segments in natural class
+    Return set of symbols in natural class
     defined by feature-value dict ftrs.
     """
-    # Arg feature values.
+    # Handle string ftrs arg.
+    if isinstance(ftrs, str):
+        return [natural_class(fm, ftrs1) for ftrs1 in from_str(fm, ftrs)]
+    # Handle dict ftrs and keyword args.
     if not ftrs:
         ftrs = dict()
     for (key, val) in kwargs.items():
         ftrs[key] = val
+    # Handle numeric/verbose feature vals.
     for key in ftrs:
         val = ftrs[key]
         if (val == 1 or val == '+1'):
             ftrs[key] = '+'
         elif (val == -1 or val == '-1'):
             ftrs[key] = '-'
-    # Natural class by subsumption.
+    # Natural class determined by subsumption.
     if not ftrs:
         ret = set([x for x in fm.symbols if x != phon_config.epsilon])
     else:
@@ -415,17 +443,12 @@ def natural_class(fm, ftrs=None, to_regexp=False, **kwargs):
             x for x, ftrs_x in fm.sym2ftrs.items()
             if subsumes(ftrs, ftrs_x) and x != phon_config.epsilon
         ])
-    # Optionally convert to regexp.
-    if to_regexp:
-        ret = list(ret)
-        ret.sort(key=lambda x: fm.symbols.index(x))
-        ret = '(' + '|'.join(ret) + ')'
     return ret
 
 
-def to_regexp(fm, ftrs):
+def from_str(fm, ftrs):
     """
-    Convert sequence of feature matrices to regexp.
+    Convert feature-matrix string to feature-value dict.
     note: '[]' is interpreted as [+seg(ment)].
     """
     ftrs = re.sub(r'\s+', '', ftrs)
@@ -437,10 +460,39 @@ def to_regexp(fm, ftrs):
             ftrs1 = '+seg'
         ftrs1 = ftrs1.split(',')
         ftrs1 = {x[1:]: x[0] for x in ftrs1 if len(x) > 1}
-        regexp1 = fm.natural_class(ftrs=ftrs1, to_regexp=True)
-        ret.append(regexp1)
-    ret = ''.join(ret)
+        ret.append(ftrs1)
     return ret
+
+
+def to_str(fm, ftrs):
+    """
+    Convert sequence of natural classes to
+    sequence of feature matrices.
+    """
+    pass  # todo
+
+
+def to_regexp(fm, syms):
+    """
+    Convert sequence of natural classes (symbol sets) or
+    feature-value dicts or a feature-matrix string to regexp.
+    note: '[]' is interpreted as [+seg(ment)].
+    """
+    # Convert feature-matrix string to features.
+    if isinstance(syms, str):
+        syms = from_str(fm, syms)
+    # Promote singleton syms arg to list.
+    if not isinstance(syms, (list, tuple)):
+        syms = [syms]
+    # Create regexp.
+    ret = []
+    for syms1 in syms:
+        if isinstance(syms1, dict):
+            syms1 = natural_class(fm, syms1)
+        syms1 = list(syms1)
+        syms1.sort(key=lambda x: fm.symbols.index(x))
+        ret.append('(' + '|'.join(syms1) + ')')
+    return ''.join(ret)
 
 
 def is_zero(val):
@@ -458,9 +510,17 @@ if __name__ == "__main__":
     print(fm.ftr_matrix)
     print(fm.ftr_matrix_vec)
     #print(fm.ftr_matrix_vec.shape, len(fm.symbols), len(fm.features))
+    print(get_features(fm, 'a'))
     print(fm.get_features('a'))
+    print(natural_class(fm, '[+ syllabic ]'))
+    print(to_regexp(fm, '[+ syllabic ][-syllabic]'))
     print(fm.to_regexp('[+ syllabic ][-syllabic]'))
     print(fm.to_regexp('[][+syllabic]'))
+    print(get_change(fm, 'o', 'u'))
+    print(fm.get_change('o', 'u'))
+    delta = fm.get_change('o', 't')
+    result = fm.get_features('o') | delta
+    print(fm.natural_class(result))
 
 # # # # # # # # # #
 
