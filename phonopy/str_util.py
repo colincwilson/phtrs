@@ -40,7 +40,7 @@ def str_sep(word, syms=None, regexp=None):
         regexp = '(' + '|'.join(syms) + ')'
 
     if isinstance(word, list):
-        return [str_sep(word_, syms, regexp, sep) for word_ in word]
+        return [str_sep(word_, syms, regexp) for word_ in word]
 
     ret = re.sub(regexp, "\\1 ", word)
     ret = squish(ret)
@@ -255,7 +255,7 @@ def unigram_tokens(word, sep=' '):
     """
     Get unigram tokens from word(s).
     """
-    if instance(word, list):
+    if isinstance(word, list):
         toks = []
         for word_ in word:
             toks += unigram_tokens(word_, sep)
@@ -309,7 +309,7 @@ def bigrams(word, sep=' '):
     ret = Counter()
     if isinstance(word, pl.Series):
         word = word.to_list()
-    elif instance(word, str):
+    elif isinstance(word, str):
         word = [word]
     for word_ in word:
         ret.update(bigram_tokens(word_, sep))
