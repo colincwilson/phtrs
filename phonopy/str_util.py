@@ -114,7 +114,7 @@ def remove_syms(word, syms=None, regexp=None, sep=' '):
     if regexp is None:
         regexp = '(' + '|'.join(syms) + ')'
 
-    if isinstance(word, _collection_):
+    if isinstance(word, _collection):
         return [remove(word_, syms, regexp, sep) for word_ in word]
 
     ret = re.sub(regexp, '', word)
@@ -127,25 +127,24 @@ def remove_punc(word):
     Remove punctuation from word.
     todo: sep argument
     """
-    if isinstance(word, _collection_):
+    if isinstance(word, _collection):
         return [remove_punc(word_) for word_ in word]
     ret = re.sub(punc_regexp, '', word)
     ret = squish(ret)
     return ret
 
 
-def str_pad(word, n, sep=' ', pad=phon_config.epsilon, edge='end'):
+def str_pad(word, n=1, sep=' ', pad=None, edge='end'):
     """
-    Pad end of string up to length n.
+    Pad string up to length n at designated edge.
     """
-    if isinstance(word, _collection_):
+    if isinstance(word, _collection):
         return [str_pad(word_, n, sep, pad, edge) for word_ in word]
     if word is None:
-        ret = ''
-    if sep != '':
-        ret = word.split(sep)
-    else:
-        ret = list(word)
+        word = ''
+    ret = word.split(sep) if sep != '' else list(word)
+    if pad is None:
+        pad = phon_config.epsilon
     if len(ret) < n:
         padding = [pad] * (n - len(ret))
         if edge == 'end':
@@ -154,6 +153,32 @@ def str_pad(word, n, sep=' ', pad=phon_config.epsilon, edge='end'):
             ret = padding + ret
     ret = sep.join(ret)
     return ret
+
+
+def str_pad2(input_, output_=None, sep=' ', pad=None, edge='end'):
+    """
+    Pad input/output strings to same length.
+    """
+    if isinstance(input_, _collection):
+        if output_:
+            pairs = zip(input_, output_)
+        else:
+            pairs = input_  # assume pre-zipped
+        return [str_pad2(x, y, sep, pad, edge) for (x, y) in pairs]
+
+    if input_ is None:
+        input_ = ''
+    if output_ is None:
+        output_ = ''
+
+    n_input = len(input_.split(sep)) if sep != '' else len(input_)
+    n_output = len(output_.split(sep)) if sep != '' else len(output_)
+
+    if n_input < n_output:
+        input_ = str_pad(input_, n_output, sep, pad, edge)
+    if n_input > n_output:
+        output_ = str_pad(output_, n_input, sep, pad, edge)
+    return (input_, output_)
 
 
 def str_subs(word, subs={}, sep=' '):
@@ -179,6 +204,7 @@ retranscribe = str_subs  # Alias.
 
 # # # # # # # # # #
 # Phonological pseudo-regexps.
+# todo: replace with equiv. wynini functions
 
 
 def combos(s):
@@ -214,7 +240,7 @@ def add_indices(word, skip=[], sep=' '):
     """
     if isinstance(word, _collection):
         return [add_indices(word_, sep) for word_ in word]
-    syms = word.split(sep)
+    syms = word.split(sep) if sep != '' else word
     use_skip = (skip is not None and len(skip) > 0)
     syms_idx, idx = [], 0
     for sym in syms:
