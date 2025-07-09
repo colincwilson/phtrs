@@ -19,7 +19,7 @@ _collection = (list, set, tuple)  # disjunctive type
 
 def squish(word):
     """
-    Collapse consecutive space chars to singe space,
+    Collapse consecutive space chars to single space,
     remove leading/trailing spaces.
     see: https://stringr.tidyverse.org/reference/str_trim.html
     """
@@ -253,13 +253,15 @@ def add_indices(word, skip=[], sep=' '):
     return ret
 
 
-def remove_indices(word):
+def remove_indices(word, sep=' '):
     """
-    Remove integer indices from end of symbols in word(s).
+    Remove integer indices from end of symbols in 
+    separated word(s).
     """
     if isinstance(word, _collection):
-        return [remove_indices(word_) for word_ in word]
-    ret = re.sub(f'[{subscript_digits}]+$', '', word)
+        return [remove_indices(word_, sep) for word_ in word]
+    ret = re.sub(f'[{subscript_digits}]+({sep}|$)', sep, word)
+    ret = squish(ret)
     return ret
 
 
@@ -389,8 +391,8 @@ def grams(word, k=1, sep=' '):
     if k == 1:
         return unigrams(word, sep)
     if k == 2:
-        return bigram(word, sep)
-    print('grams not yet implemented for k>2')
+        return bigrams(word, sep)
+    print(f'Nope: grams() not yet implemented for k={k} > 2.')
     return None
 
 
@@ -420,9 +422,8 @@ def lcp(x, y, prefix=True):
     return match
 
 
-def test():
-    #phon_config.init({'epsilon': '<eps>', 'bos': '>', 'eos': '<'})
-    print(phon_config.bos)
+if __name__ == "__main__":
+    print(phon_config.bos, phon_config.eos, phon_config.epsilon)
     print(phon_config.eos)
     print(squish(' t  e s  t   '))
     print(str_sep('cheek', syms=['ch', 'ee', 'k']))
@@ -430,7 +431,3 @@ def test():
     print(add_delim('test'))
     print(remove_syms('testing', syms='aeiou'))
     print(remove_punc('[(testing).!]?'))
-
-
-if __name__ == "__main__":
-    test()
