@@ -14,15 +14,18 @@ smart_punc = '“”‘’'
 punc = punc + smart_punc
 punc_regexp = r"[" + re.escape(punc) + r"]"
 
+_collection = (list, set, tuple)  # disjunctive type
+
 
 def squish(word):
     """
-    Collapse consecutive spaces, remove leading/trailing spaces.
+    Collapse consecutive space chars to singe space,
+    remove leading/trailing spaces.
     see: https://stringr.tidyverse.org/reference/str_trim.html
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         return [squish(word_) for word_ in word]
-    ret = re.sub('[ ]+', ' ', word)
+    ret = re.sub(r'\s+', ' ', word)
     ret = ret.strip()
     return ret
 
@@ -39,7 +42,7 @@ def str_sep(word, syms=None, regexp=None):
         syms.sort(key=lambda x: len(x), reverse=True)
         regexp = '(' + '|'.join(syms) + ')'
 
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         return [str_sep(word_, syms, regexp) for word_ in word]
 
     ret = re.sub(regexp, "\\1 ", word)
@@ -47,34 +50,57 @@ def str_sep(word, syms=None, regexp=None):
     return ret
 
 
-def add_delim(word, sep=False, edge='both'):
+def add_delim(word, edge='both', iostring=False):
     """
     Add begin/end symbols to space-separated string.
     """
-    if isinstance(word, list):
-        return [add_delim(word_, sep, edge) for word_ in word]
-    ret = word
-    if sep:
-        ret = ' '.join(ret)
+    if isinstance(word, _collection):
+        return [add_delim(word_, edge, iostring) for word_ in word]
+    bos = phon_config.bos
+    eos = phon_config.eos
+    if iostring:
+        bos = f'{bos}:{bos}'
+        eos = f'{eos}:{eos}'
     if edge == 'begin':
-        ret = f'{phon_config.bos} {ret}'
+        ret = f'{bos} {word}'
     elif edge == 'end':
-        ret = f'{ret} {phon_config.eos}'
-    else:  # default edge == 'both'
-        ret = f'{phon_config.bos} {ret} {phon_config.eos}'
+        ret = f'{word} {eos}'
+    else:  # default
+        ret = f'{bos} {word} {eos}'
     return ret
 
 
 def remove_delim(word):
     """
     Remove begin/end delimiters.
-    todo: sep argument
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         return [remove_delim(word_) for word_ in word]
+    bos = phon_config.bos
+    eos = phon_config.eos
     ret = word
-    ret = re.sub(f'{phon_config.bos}', '', ret)
-    ret = re.sub(f'{phon_config.eos}', '', ret)
+    # Remove from iostring.
+    ret = re.sub(f'{bos}:{bos}', '', ret)
+    ret = re.sub(f'{eos}:{eos}', '', ret)
+    # Remove from istring or ostring.
+    ret = re.sub(f'{bos}', '', ret)
+    ret = re.sub(f'{eos}', '', ret)
+    ret = squish(ret)
+    return ret
+
+
+def remove_epsilon(word):
+    """
+    Remove epsilons.
+    """
+    if isinstance(word, _collection):
+        return [remove_epsilon(word_) for word_ in word]
+    epsilon = phon_config.epsilon
+    ret = word
+    # Remove from iostring.
+    ret = re.sub(f'{epsilon}:{epsilon}', '', ret)
+    # Remove from istring or ostring.
+    ret = re.sub(f'{epsilon}', '', ret)
     ret = squish(ret)
     return ret
 
@@ -88,7 +114,7 @@ def remove_syms(word, syms=None, regexp=None, sep=' '):
     if regexp is None:
         regexp = '(' + '|'.join(syms) + ')'
 
-    if isinstance(word, list):
+    if isinstance(word, _collection_):
         return [remove(word_, syms, regexp, sep) for word_ in word]
 
     ret = re.sub(regexp, '', word)
@@ -101,27 +127,32 @@ def remove_punc(word):
     Remove punctuation from word.
     todo: sep argument
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection_):
         return [remove_punc(word_) for word_ in word]
     ret = re.sub(punc_regexp, '', word)
     ret = squish(ret)
     return ret
 
 
-def str_pad(word, n, sep=' ', pad=phon_config.epsilon):
+def str_pad(word, n, sep=' ', pad=phon_config.epsilon, edge='end'):
     """
-    Pad end of string or list up to length n.
+    Pad end of string up to length n.
     """
+    if isinstance(word, _collection_):
+        return [str_pad(word_, n, sep, pad, edge) for word_ in word]
     if word is None:
-        ret = [pad]
-    elif isinstance(word, str) and sep != '':
-        ret = word.split(' ')
+        ret = ''
+    if sep != '':
+        ret = word.split(sep)
     else:
-        ret = word
+        ret = list(word)
     if len(ret) < n:
-        ret += [pad] * (n - len(ret))
-    if isinstance(word, str):
-        sep.join(ret)
+        padding = [pad] * (n - len(ret))
+        if edge == 'end':
+            ret = ret + padding
+        elif edge == 'begin':
+            ret = padding + ret
+    ret = sep.join(ret)
     return ret
 
 
@@ -133,7 +164,7 @@ def str_subs(word, subs={}, sep=' '):
     note: alternative to native str.maketrans / 
     str.translate for space-separated symbol sequences.
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         return [str_subs(word_, subs, sep) for word_ in word]
     sep_flag = (sep is not None and sep != '')
     ret = word.split(sep) if sep_flag else word
@@ -156,7 +187,7 @@ def combos(s):
     (e.g., set of acceptable onsets) to list of tuples.
     Ex. combos("(k|g) (r|l|w)") => [(k,r), (k,l), ... (g,w)])
     """
-    if isinstance(s, (list, set, tuple)):
+    if isinstance(s, _collection):
         return [tuple(x.split(' ')) for x in s]
     parts = s.split(' ')
     parts = [squish(re.sub("[()]", "", part)) for part in parts]
@@ -181,7 +212,7 @@ def add_indices(word, skip=[], sep=' '):
     Add integer indices (numbered left-to-right)
     to end of symbols in separated word(s).
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         return [add_indices(word_, sep) for word_ in word]
     syms = word.split(sep)
     use_skip = (skip is not None and len(skip) > 0)
@@ -200,7 +231,7 @@ def remove_indices(word):
     """
     Remove integer indices from end of symbols in word(s).
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         return [remove_indices(word_) for word_ in word]
     ret = re.sub(f'[{subscript_digits}]+$', '', word)
     return ret
@@ -255,7 +286,7 @@ def unigram_tokens(word, sep=' '):
     """
     Get unigram tokens from word(s).
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         toks = []
         for word_ in word:
             toks += unigram_tokens(word_, sep)
@@ -291,7 +322,7 @@ def bigram_tokens(word, sep=' '):
     """
     Get bigram tokens from one word.
     """
-    if isinstance(word, list):
+    if isinstance(word, _collection):
         toks = []
         for word_ in word:
             toks += bigram_tokens(word_, sep)
