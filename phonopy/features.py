@@ -107,7 +107,7 @@ def import_features(feature_file=default_feature_file,
     todo: arrange segments in IPA order
     """
 
-    # Read matrix from file.
+    # Read matrix from file (absolute path).
     ftr_matrix = pd.read_csv(feature_file,
                              sep=',',
                              encoding='utf-8',
@@ -240,7 +240,8 @@ read_features = import_features  # Alias.
 def one_hot_features(segments=None,
                      vowels=None,
                      standardize=True,
-                     save_file=None):
+                     save_file=None,
+                     verbose=False):
     """
     Create one-hot feature matrix from list of segments
     (or number of ascii segments), optionally standardizing
