@@ -70,6 +70,9 @@ def add_delim(word, edge='both', iostring=False):
     return ret
 
 
+delim = add_delim  # Alias.
+
+
 def remove_delim(word):
     """
     Remove begin/end delimiters.
@@ -87,6 +90,9 @@ def remove_delim(word):
     ret = re.sub(f'{eos}', '', ret)
     ret = squish(ret)
     return ret
+
+
+undelim = remove_delim  # Alias.
 
 
 def remove_epsilon(word):
